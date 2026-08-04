@@ -17,8 +17,8 @@ repo is the source of truth.
 ## Verify
 
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' https://nexara-api-edge-stage.nexara.workers.dev/health
-curl -s -o /dev/null -w '%{http_code}\n' https://nexara-api-edge-prod.nexara.workers.dev/health
+curl -s -o /dev/null -w '%{http_code}\n' https://nexara-api-edge-stage.rahulvarghesepullely.workers.dev/health
+curl -s -o /dev/null -w '%{http_code}\n' https://nexara-api-edge-prod.rahulvarghesepullely.workers.dev/health
 ```
 
 2xx–4xx = alive (401/403 is "deployed, unauthorized"); 5xx/timeout = not

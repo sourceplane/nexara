@@ -3,7 +3,7 @@
 Cloudflare Worker for the API edge Runtime
 
 Part of the nexara runtime: a Cloudflare Worker deployed per
-environment (`stage`, `prod`; `dev` is verify-only). Public entry point: `https://nexara-api-edge-{stage,prod}.nexara.workers.dev`
+environment (`stage`, `prod`; `dev` is verify-only). Public entry point: `https://nexara-api-edge-{stage,prod}.rahulvarghesepullely.workers.dev`
 
 ## Depends on
 

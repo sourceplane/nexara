@@ -35,7 +35,7 @@
         "GITHUB_OAUTH_CLIENT_ID": "",
         "GOOGLE_OAUTH_CLIENT_ID": "",
         "OAUTH_REDIRECT_BASE_URL": "",
-        "OAUTH_ALLOWED_CONSOLE_ORIGINS": "https://nexara-web-console-next-dev.nexara.workers.dev",
+        "OAUTH_ALLOWED_CONSOLE_ORIGINS": "https://nexara-web-console-next-dev.rahulvarghesepullely.workers.dev",
         "SOLO_MODE": "true"
       }
     },
@@ -45,8 +45,8 @@
         "DEBUG_DELIVERY": "true",
         "GITHUB_OAUTH_CLIENT_ID": "Ov23liKBsjAqJJsmBavV",
         "GOOGLE_OAUTH_CLIENT_ID": "441163126775-7fabhvpbl9tsga921rklpdlde7mduq34.apps.googleusercontent.com",
-        "OAUTH_REDIRECT_BASE_URL": "https://nexara-api-edge-stage.nexara.workers.dev",
-        "OAUTH_ALLOWED_CONSOLE_ORIGINS": "https://stage.nexara.dev,https://nexara-web-console-next-stage.nexara.workers.dev",
+        "OAUTH_REDIRECT_BASE_URL": "https://nexara-api-edge-stage.rahulvarghesepullely.workers.dev",
+        "OAUTH_ALLOWED_CONSOLE_ORIGINS": "https://stage.nexara.dev,https://nexara-web-console-next-stage.rahulvarghesepullely.workers.dev",
         "SOLO_MODE": "true"
       },
       "hyperdrive": [
@@ -76,8 +76,8 @@
         "DEBUG_DELIVERY": "false",
         "GITHUB_OAUTH_CLIENT_ID": "Ov23lilp2aoyeBDVU8Vc",
         "GOOGLE_OAUTH_CLIENT_ID": "441163126775-7fabhvpbl9tsga921rklpdlde7mduq34.apps.googleusercontent.com",
-        "OAUTH_REDIRECT_BASE_URL": "https://nexara-api-edge-prod.nexara.workers.dev",
-        "OAUTH_ALLOWED_CONSOLE_ORIGINS": "https://prod.nexara.dev,https://nexara-web-console-next-prod.nexara.workers.dev",
+        "OAUTH_REDIRECT_BASE_URL": "https://nexara-api-edge-prod.rahulvarghesepullely.workers.dev",
+        "OAUTH_ALLOWED_CONSOLE_ORIGINS": "https://prod.nexara.dev,https://nexara-web-console-next-prod.rahulvarghesepullely.workers.dev",
         "SOLO_MODE": "true"
       },
       "hyperdrive": [
