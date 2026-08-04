@@ -48,7 +48,10 @@
         }
       ],
       "services": [
-        // @cycle-break:billing-worker->membership-worker:ewogICAgICAgICAgImJpbmRpbmciOiAiTUVNQkVSU0hJUF9XT1JLRVIiLAogICAgICAgICAgInNlcnZpY2UiOiAibmV4YXJhLW1lbWJlcnNoaXAtd29ya2VyLXN0YWdlIgogICAgICAgIH0s
+        {
+          "binding": "MEMBERSHIP_WORKER",
+          "service": "nexara-membership-worker-stage"
+        },
         {
           "binding": "POLICY_WORKER",
           "service": "nexara-policy-worker-stage"
@@ -71,7 +74,10 @@
         }
       ],
       "services": [
-        // @cycle-break:billing-worker->membership-worker:ewogICAgICAgICAgImJpbmRpbmciOiAiTUVNQkVSU0hJUF9XT1JLRVIiLAogICAgICAgICAgInNlcnZpY2UiOiAibmV4YXJhLW1lbWJlcnNoaXAtd29ya2VyLXByb2QiCiAgICAgICAgfSw=
+        {
+          "binding": "MEMBERSHIP_WORKER",
+          "service": "nexara-membership-worker-prod"
+        },
         {
           "binding": "POLICY_WORKER",
           "service": "nexara-policy-worker-prod"
