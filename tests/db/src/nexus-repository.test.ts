@@ -162,6 +162,58 @@ describe("query shape", () => {
     );
   });
 
+  it("scopes the alert contact to one org on every verb (R10)", async () => {
+    const repo = createNexusRepository(recordingExecutor([[]]).executor);
+    void repo;
+    for (const [label, run] of [
+      ["get", (r: ReturnType<typeof createNexusRepository>) => r.getAlertContact(ORG)],
+      [
+        "upsert",
+        (r: ReturnType<typeof createNexusRepository>) =>
+          r.upsertAlertContact(ORG, {
+            email: "a@b.co",
+            label: null,
+            now: new Date("2026-08-04T00:00:00.000Z"),
+          }),
+      ],
+      ["delete", (r: ReturnType<typeof createNexusRepository>) => r.deleteAlertContact(ORG)],
+    ] as const) {
+      const { executor, queries } = recordingExecutor([[]]);
+      await run(createNexusRepository(executor));
+      // The CI tenancy scan enforces this too; asserting it here names the
+      // verb that broke it when one does.
+      expect({ label, scoped: /org_id/.test(queries[0]!.text) }).toEqual({ label, scoped: true });
+      expect(queries[0]!.params[0]).toBe(ORG);
+    }
+  });
+
+  it("upserts the contact rather than conflicting — one row per org", async () => {
+    const { executor, queries } = recordingExecutor([[]]);
+    await createNexusRepository(executor).upsertAlertContact(ORG, {
+      email: "a@b.co",
+      label: "Bookkeeper",
+      now: new Date("2026-08-04T00:00:00.000Z"),
+    });
+    expect(queries[0]!.text).toMatch(/ON CONFLICT \(org_id\) DO UPDATE/);
+    // created_at is preserved by EXCLUDED not touching it; updated_at moves.
+    expect(queries[0]!.text).toMatch(/updated_at = EXCLUDED\.updated_at/);
+    expect(queries[0]!.text).not.toMatch(/created_at = EXCLUDED/);
+  });
+
+  it("reports whether a delete actually removed anything", async () => {
+    // Idempotent at the handler, but the repository still reports the truth —
+    // a caller that wanted to know can.
+    const gone = await createNexusRepository(recordingExecutor([[]]).executor).deleteAlertContact(
+      ORG,
+    );
+    expect(gone).toEqual({ ok: true, value: false });
+
+    const existed = await createNexusRepository(
+      recordingExecutor([[{ org_id: ORG }]]).executor,
+    ).deleteAlertContact(ORG);
+    expect(existed).toEqual({ ok: true, value: true });
+  });
+
   it("moves the watermark forward only, using GREATEST", async () => {
     // Two evaluations racing must not move the watermark backwards: the loser
     // writing last would re-do work, or worse, skip it.

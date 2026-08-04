@@ -56,6 +56,26 @@ export function alertKindFor(transition: Transition): "approaching" | "crossed" 
   return null;
 }
 
+/**
+ * The seller's named tax contact, or the environment default, or null.
+ *
+ * A repository failure is treated as "no contact" rather than propagated: an
+ * alert with no email still writes its row, emits its event, and records
+ * `no_recipient_configured`, which is a recoverable and *queryable* outcome.
+ * Aborting the tick over a lookup would suppress the determination as well,
+ * which is not.
+ */
+async function resolveRecipient(
+  repo: NexusRepository,
+  env: Env,
+  orgId: Uuid,
+): Promise<string | null> {
+  const contact = await repo.getAlertContact(orgId);
+  if (contact.ok && contact.value) return contact.value.email.trim().toLowerCase();
+  const fallback = env.NEXUS_ALERT_EMAIL?.trim().toLowerCase();
+  return fallback ? fallback : null;
+}
+
 export async function raiseAlerts(
   repo: NexusRepository,
   env: Env,
@@ -71,6 +91,17 @@ export async function raiseAlerts(
     suppressedUnverified: 0,
     missingRecipient: 0,
   };
+
+  // Resolved ONCE per org rather than per transition: a seller crossing four
+  // states in one tick should not cost four identical lookups, and the
+  // recipient cannot meaningfully change mid-tick.
+  //
+  // The seller's own tax contact wins over the environment default (R10). The
+  // default remains as a floor rather than being removed with this milestone:
+  // an org that has not named a contact yet is exactly the org that has just
+  // started trading, which is exactly the org about to cross its first
+  // threshold. Silence there is the failure this whole path exists to avoid.
+  const recipientEmail = await resolveRecipient(repo, env, orgId);
 
   for (const transition of transitions) {
     const kind = alertKindFor(transition);
@@ -94,7 +125,6 @@ export async function raiseAlerts(
     // `notification_ref` records the outcome, including the absence of a
     // recipient — so "no email went out" is a queryable fact rather than
     // something you discover from a support ticket.
-    const recipientEmail = env.NEXUS_ALERT_EMAIL?.trim().toLowerCase();
     const alert = await repo.insertAlertOnce(orgId, {
       id: crypto.randomUUID(),
       jurisdiction: transition.jurisdiction,

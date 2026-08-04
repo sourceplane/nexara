@@ -551,6 +551,42 @@ export interface ListAlertsResponse {
   alerts: PublicAlert[];
 }
 
+/**
+ * Where this org's threshold alerts go (R10).
+ *
+ * Deliberately not a user id. The person who should read "you have crossed
+ * Texas" is often an accountant or a shared finance inbox rather than a
+ * console user, and requiring a login would push sellers to name their own
+ * address and then never read it.
+ */
+export interface PublicAlertContact {
+  email: string;
+  /** A seller-chosen label — "our bookkeeper". Never used for routing. */
+  label: string | null;
+  updatedAt: string;
+}
+
+export interface GetAlertContactResponse {
+  /** Null when none is set; alerts then fall back to the environment default
+   *  and the alert row records that they did. */
+  contact: PublicAlertContact | null;
+  /**
+   * True when an environment-level fallback exists, so the console can say
+   * "alerts are going somewhere, just not somewhere you chose" rather than
+   * implying silence.
+   */
+  hasEnvironmentFallback: boolean;
+}
+
+export interface SetAlertContactRequest {
+  email: string;
+  label?: string | null;
+}
+
+export interface SetAlertContactResponse {
+  contact: PublicAlertContact;
+}
+
 // ── Event types ──────────────────────────────────────────────
 
 /**

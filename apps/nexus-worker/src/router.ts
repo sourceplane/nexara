@@ -9,6 +9,11 @@ import {
   handleListRegistrations,
   handleUpsertRegistration,
 } from "./handlers/registrations.js";
+import {
+  handleClearAlertContact,
+  handleGetAlertContact,
+  handleSetAlertContact,
+} from "./handlers/alert-contact.js";
 import { errorResponse, methodNotAllowed, notFound } from "./http.js";
 import { generateRequestId, parseOrgPublicId } from "./ids.js";
 import { isKnownJurisdictionCode } from "./jurisdictions.js";
@@ -39,6 +44,7 @@ const EVALUATE_RE = /^\/v1\/organizations\/([^/]+)\/nexus\/evaluate$/;
 const LEDGER_RE = /^\/v1\/organizations\/([^/]+)\/ledger$/;
 const LEDGER_IMPORT_RE = /^\/v1\/organizations\/([^/]+)\/ledger\/import$/;
 const REGISTRATIONS_RE = /^\/v1\/organizations\/([^/]+)\/registrations$/;
+const ALERT_CONTACT_RE = /^\/v1\/organizations\/([^/]+)\/nexus\/alert-contact$/;
 
 export async function route(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
@@ -87,6 +93,21 @@ export async function route(request: Request, env: Env): Promise<Response> {
         re: LEDGER_RE,
         methods: ["GET"],
         run: (_m, orgId, actor) => handleListLedger(request, env, requestId, actor, orgId!),
+      },
+      {
+        // Matched before EXPOSURE_RE would ever be reached is unnecessary —
+        // the patterns are disjoint — but it sits with the other nexus routes.
+        re: ALERT_CONTACT_RE,
+        methods: ["GET", "PUT", "DELETE"],
+        run: (_m, orgId, actor) => {
+          if (request.method === "GET") {
+            return handleGetAlertContact(env, requestId, actor, orgId!);
+          }
+          if (request.method === "PUT") {
+            return handleSetAlertContact(request, env, requestId, actor, orgId!);
+          }
+          return handleClearAlertContact(env, requestId, actor, orgId!);
+        },
       },
       {
         re: REGISTRATIONS_RE,

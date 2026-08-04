@@ -5,6 +5,7 @@ import { handleHealth } from "./handlers/health.js";
 import { handleRecordSupportAction } from "./handlers/record-support-action.js";
 import { handleListSupportActions } from "./handlers/list-support-actions.js";
 import { handleListEntitlementDecisions } from "./handlers/list-entitlement-decisions.js";
+import { handleNexusSupportView } from "./handlers/nexus-support.js";
 import {
   handleLookupOrganizationForSupport,
   handleLookupUserForSupport,
@@ -58,6 +59,10 @@ const ORG_LOOKUP_RE = /^\/v1\/internal\/support\/organizations\/([^/]+)$/;
 const USER_LOOKUP_RE = /^\/v1\/internal\/support\/users\/([^/]+)$/;
 const ACTIONS_RE = /^\/v1\/internal\/support\/organizations\/([^/]+)\/actions$/;
 const ENTITLEMENT_DECISIONS_RE = /^\/v1\/internal\/support\/organizations\/([^/]+)\/entitlement-decisions$/;
+// The nexus support view (NX8). GET only — there is no sibling POST/PUT/DELETE
+// on this path and `nexus-support-readonly.test.ts` fails the build if one
+// appears.
+const NEXUS_SUPPORT_RE = /^\/v1\/internal\/support\/organizations\/([^/]+)\/nexus$/;
 
 export async function route(request: Request, env: Env): Promise<Response> {
   const requestId = resolveRequestId(request);
@@ -89,6 +94,13 @@ export async function route(request: Request, env: Env): Promise<Response> {
     if (method === "GET" && decisionsMatch) {
       const ctx = resolveSupportContext(request);
       return await handleListEntitlementDecisions(env, requestId, ctx, decisionsMatch[1]!, url);
+    }
+
+    // Read-only nexus support view for a target org (NX8).
+    const nexusMatch = NEXUS_SUPPORT_RE.exec(path);
+    if (method === "GET" && nexusMatch) {
+      const ctx = resolveSupportContext(request);
+      return await handleNexusSupportView(env, requestId, ctx, nexusMatch[1]!, url);
     }
 
     // Read-only diagnostic lookup: organization.

@@ -12,7 +12,8 @@ export const CONSOLE_TITLE = `${PRODUCT_NAME} Console`;
 
 /** Marketing-facing product description (document metadata). */
 export const PRODUCT_DESCRIPTION =
-  "Next-gen control plane for your projects, environments, and entitlements.";
+  "Economic-nexus threshold monitoring for online sellers. Connect your sales channels, " +
+  "see where you have crossed a state's threshold, and show the working.";
 
 /** The Cloudflare account's workers.dev subdomain serving this instance. */
 export const WORKERS_DEV_SUBDOMAIN = "rahulvarghesepullely";

@@ -65,7 +65,15 @@ describe("buildNavSections under the Solo (M0) profile", () => {
     const org = buildNavSections({ orgSlug: "acme" }, true).find((s) => s.id === "org")!;
     expect(org.label).toBe("Account");
     const hrefs = org.links.map((l) => l.href);
-    expect(hrefs).toEqual(["/orgs/acme/settings"]); // only Settings survives
+    // The nexus surfaces ARE the product and survive Solo; projects and usage
+    // are platform plumbing a B2C seller never sees.
+    expect(hrefs).toEqual([
+      "/orgs/acme/exposure",
+      "/orgs/acme/registrations",
+      "/orgs/acme/ledger",
+      "/orgs/acme/channels",
+      "/orgs/acme/settings",
+    ]);
     expect(hrefs).not.toContain("/orgs/acme/projects");
     expect(hrefs).not.toContain("/orgs/acme/usage");
   });
@@ -79,6 +87,11 @@ describe("buildNavSections under the Solo (M0) profile", () => {
     const org = buildNavSections({ orgSlug: "acme" }, false).find((s) => s.id === "org")!;
     expect(org.label).toBe("Org · acme");
     expect(org.links.map((l) => l.href)).toEqual([
+      // Nexus leads: the board is what an operator opens the console for.
+      "/orgs/acme/exposure",
+      "/orgs/acme/registrations",
+      "/orgs/acme/ledger",
+      "/orgs/acme/channels",
       "/orgs/acme/projects",
       "/orgs/acme/usage",
       "/orgs/acme/settings",

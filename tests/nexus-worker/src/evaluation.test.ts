@@ -67,6 +67,10 @@ function stateful(options: {
   verified?: boolean;
   gross?: number;
   rules?: RuleRow[];
+  /** R10: the seller's own tax contact, when they have named one. */
+  alertContact?: string | null;
+  /** Simulates a repository failure on the contact lookup. */
+  contactFails?: boolean;
 }) {
   const determinations: DeterminationRow[] = [];
   const alertKeys = new Set<string>();
@@ -116,6 +120,23 @@ function stateful(options: {
     getDeterminationById: async () => ({ ok: false, error: { kind: "not_found" } }),
     upsertRegistration: async () => ({ ok: false, error: { kind: "internal", message: "n/a" } }),
     listRegistrations: async () => ok([]),
+    getAlertContact: async () => {
+      if (options.contactFails) return { ok: false, error: { kind: "internal", message: "n/a" } };
+      const email = options.alertContact ?? null;
+      return ok(
+        email === null
+          ? null
+          : {
+              orgId: ORG_UUID,
+              email,
+              label: null,
+              createdAt: new Date("2026-01-01T00:00:00.000Z"),
+              updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+            },
+      );
+    },
+    upsertAlertContact: async () => ({ ok: false, error: { kind: "internal", message: "n/a" } }),
+    deleteAlertContact: async () => ok(false),
     insertAlertOnce: async (_org, input) => {
       // The real guarantee is `nexus_alerts_once_idx`; this mirrors it exactly
       // so the "re-run produces none of them" assertion is testing the caller,
@@ -307,6 +328,65 @@ describe("alerting", () => {
     expect(alerts).toHaveLength(1);
     expect(notifications).toHaveLength(1);
     expect(summary.alertsRaised).toBe(0);
+  });
+
+  // ── R10: the seller's own tax contact ──
+  //
+  // NX5 shipped the environment variable and said in writing it was a stopgap.
+  // These four cases are the closure: the seller's choice wins, the default is
+  // a floor rather than a competitor, a lookup failure degrades to the floor
+  // instead of losing the determination, and "nobody" is still recorded.
+
+  it("prefers the seller's own tax contact over the environment default", async () => {
+    const { repo } = stateful({
+      verified: true,
+      gross: USD(600_000),
+      alertContact: "Bookkeeper@Acme.test",
+    });
+    const { env, notifications } = recordingEnv({ alertEmail: "ops@nexara.test" });
+
+    const result = await evaluateOrg(repo, ORG, NOW);
+    if (!result.ok) return;
+    const summary = await raiseAlerts(repo, env, ORG, result.value.transitions, true, "req_1", NOW);
+
+    expect(summary.notificationsEnqueued).toBe(1);
+    const sent = notifications[0] as { recipient: { address: string } };
+    // Normalised, so a seller typing a capitalised address does not produce a
+    // recipient that differs from the one an operator would search for.
+    expect(sent.recipient.address).toBe("bookkeeper@acme.test");
+  });
+
+  it("falls back to the environment default when the seller has named nobody", async () => {
+    const { repo } = stateful({ verified: true, gross: USD(600_000), alertContact: null });
+    const { env, notifications } = recordingEnv({ alertEmail: "ops@nexara.test" });
+
+    const result = await evaluateOrg(repo, ORG, NOW);
+    if (!result.ok) return;
+    await raiseAlerts(repo, env, ORG, result.value.transitions, true, "req_1", NOW);
+
+    const sent = notifications[0] as { recipient: { address: string } };
+    expect(sent.recipient.address).toBe("ops@nexara.test");
+  });
+
+  it("degrades to the environment default when the contact lookup fails", async () => {
+    // A failed lookup must not lose the determination or the alert row. The
+    // alert is the recoverable half; the record is not.
+    const { repo, alerts } = stateful({
+      verified: true,
+      gross: USD(600_000),
+      contactFails: true,
+    });
+    const { env, notifications } = recordingEnv({ alertEmail: "ops@nexara.test" });
+
+    const result = await evaluateOrg(repo, ORG, NOW);
+    if (!result.ok) return;
+    const summary = await raiseAlerts(repo, env, ORG, result.value.transitions, true, "req_1", NOW);
+
+    expect(summary.alertsRaised).toBe(1);
+    expect(alerts).toHaveLength(1);
+    expect((notifications[0] as { recipient: { address: string } }).recipient.address).toBe(
+      "ops@nexara.test",
+    );
   });
 
   it("records the absence of a recipient rather than failing silently", async () => {

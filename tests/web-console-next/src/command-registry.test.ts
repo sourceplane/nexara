@@ -117,3 +117,27 @@ describe("groupCommands", () => {
     }
   });
 });
+
+describe("nexus commands", () => {
+  const orgCtx: CommandContext = { ...baseCtx, orgSlug: "acme" };
+
+  it("offers every nexus surface, org-scoped", () => {
+    const ids = buildBaseCommands(orgCtx).map((c) => c.id);
+    expect(ids).toEqual(
+      expect.arrayContaining(["nav.exposure", "nav.registrations", "nav.ledger", "nav.channels"]),
+    );
+  });
+
+  it("suppresses them with no org in scope — they have nowhere to navigate to", () => {
+    const ids = buildBaseCommands(baseCtx).map((c) => c.id);
+    expect(ids).not.toContain("nav.exposure");
+    expect(ids).not.toContain("nav.channels");
+  });
+
+  it("finds the board by the words a seller would actually type", () => {
+    const exposure = buildBaseCommands(orgCtx).find((c) => c.id === "nav.exposure")!;
+    expect(exposure.keywords).toEqual(expect.arrayContaining(["threshold", "state", "tax"]));
+    expect(exposure.kind).toBe("navigate");
+  });
+});
+

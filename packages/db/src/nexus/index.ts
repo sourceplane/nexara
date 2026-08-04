@@ -1,4 +1,5 @@
 export type {
+  AlertContactRow,
   AlertKind,
   AlertRow,
   AppendResult,
@@ -28,6 +29,7 @@ export type {
   SaleEventKind,
   SaleEventSource,
   ThresholdLogic,
+  UpsertAlertContactInput,
   UpsertRegistrationInput,
   WatermarkRow,
   WindowBounds,

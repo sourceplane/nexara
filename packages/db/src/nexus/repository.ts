@@ -37,6 +37,7 @@ import type {
   NexusResult,
   PageQueryParams,
   PagedResult,
+  AlertContactRow,
   RegistrationRow,
   RuleRow,
   RuleSetRow,
@@ -44,6 +45,7 @@ import type {
   UpsertRegistrationInput,
   WatermarkRow,
   WindowBounds,
+  UpsertAlertContactInput,
 } from "./types.js";
 
 // ── Value coercion ───────────────────────────────────────────
@@ -204,6 +206,16 @@ function mapDetermination(row: Record<string, unknown>): DeterminationRow {
     registrationDueOn: toCivilDate(row.registration_due_on),
     inputs: parseJson(row.inputs) as DeterminationRow["inputs"],
     internalOnly: Boolean(row.internal_only),
+  };
+}
+
+function mapAlertContact(row: Record<string, unknown>): AlertContactRow {
+  return {
+    orgId: row.org_id as string,
+    email: row.email as string,
+    label: (row.label as string | null) ?? null,
+    createdAt: new Date(row.created_at as string),
+    updatedAt: new Date(row.updated_at as string),
   };
 }
 
@@ -752,6 +764,56 @@ export function createNexusRepository(executor: SqlExecutor): NexusRepository {
         return { ok: true, value: result.rows.map(mapRegistration) };
       } catch {
         return safeError("Failed to list registrations");
+      }
+    },
+
+    async getAlertContact(orgId: Uuid): Promise<NexusResult<AlertContactRow | null>> {
+      try {
+        const result = await executor.execute<Record<string, unknown>>(
+          `SELECT * FROM nexus.alert_contacts WHERE org_id = $1`,
+          [orgId],
+        );
+        const row = result.rows[0];
+        return { ok: true, value: row ? mapAlertContact(row) : null };
+      } catch {
+        return safeError("Failed to read alert contact");
+      }
+    },
+
+    async upsertAlertContact(
+      orgId: Uuid,
+      input: UpsertAlertContactInput,
+    ): Promise<NexusResult<AlertContactRow>> {
+      try {
+        // One row per org, so this is an upsert rather than an insert with a
+        // conflict path the caller has to reason about.
+        const result = await executor.execute<Record<string, unknown>>(
+          `INSERT INTO nexus.alert_contacts (org_id, email, label, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $4)
+           ON CONFLICT (org_id) DO UPDATE
+             SET email = EXCLUDED.email,
+                 label = EXCLUDED.label,
+                 updated_at = EXCLUDED.updated_at
+           RETURNING *`,
+          [orgId, input.email, input.label, input.now],
+        );
+        const row = result.rows[0];
+        if (!row) return safeError("Failed to save alert contact");
+        return { ok: true, value: mapAlertContact(row) };
+      } catch {
+        return safeError("Failed to save alert contact");
+      }
+    },
+
+    async deleteAlertContact(orgId: Uuid): Promise<NexusResult<boolean>> {
+      try {
+        const result = await executor.execute<Record<string, unknown>>(
+          `DELETE FROM nexus.alert_contacts WHERE org_id = $1 RETURNING org_id`,
+          [orgId],
+        );
+        return { ok: true, value: result.rows.length > 0 };
+      } catch {
+        return safeError("Failed to clear alert contact");
       }
     },
 

@@ -114,6 +114,38 @@ export function buildBaseCommands(ctx: CommandContext): CommandDescriptor[] {
   if (orgBase) {
     const settingsBase = `${orgBase}/settings`;
     out.push(
+      // Nexus first: the palette's org block should open with the product, not
+      // with the platform plumbing underneath it.
+      navItem("nav.exposure", "Exposure board", `${orgBase}/exposure`, "Map", [
+        "exposure",
+        "nexus",
+        "threshold",
+        "jurisdiction",
+        "state",
+        "tax",
+      ]),
+      navItem("nav.registrations", "Registrations", `${orgBase}/registrations`, "Stamp", [
+        "registration",
+        "register",
+        "permit",
+        "deadline",
+        "nexus",
+      ]),
+      navItem("nav.ledger", "Ledger", `${orgBase}/ledger`, "Receipt", [
+        "ledger",
+        "sale",
+        "refund",
+        "event",
+        "nexus",
+      ]),
+      navItem("nav.channels", "Channels", `${orgBase}/channels`, "Plug", [
+        "channel",
+        "connect",
+        "stripe",
+        "shopify",
+        "backfill",
+        "nexus",
+      ]),
       navItem("nav.projects", "Projects", `${orgBase}/projects`, "FolderKanban", ["project"]),
       navItem("nav.usage", "Usage & quota", `${orgBase}/usage`, "Gauge", [
         "usage",

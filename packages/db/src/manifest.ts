@@ -237,5 +237,14 @@ export const manifest: MigrationManifest = {
       description:
         "The UNVERIFIED starter rule set (NX4) — 51 US jurisdictions plus two display-only international rows, covering every measurement basis, period, marketplace treatment, threshold logic, and deadline variant. verified = false by design §11: every determination it produces is internal-only until a named human with tax-practice accountability verifies a set against primary sources (Q1)",
     },
+    {
+      id: "260_nexus_alert_contact",
+      context: "nexus",
+      path: "260_nexus_alert_contact/up.sql",
+      checksum:
+        "ddac1cf522e0ef4aff99389291fefebd490490aa026af8ce9afb4a81e15a5da6",
+      description:
+        "Where a seller's threshold alerts go (R10). One accountable contact per org, owned by the nexus context rather than resolved from membership — the evaluation cron has no actor to authorize a cross-context read as, and a second SQL surface on another context's tables is the failure the tenancy scan exists to prevent, arriving from the other direction",
+    },
   ],
 };

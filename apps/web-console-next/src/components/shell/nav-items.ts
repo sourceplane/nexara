@@ -38,6 +38,22 @@ export interface NavScope {
  * section is relabelled, and project scope never appears. Defaults to the build
  * flag, so callers are unchanged; tests pass it explicitly for both profiles.
  */
+/**
+ * The nexus surfaces, in the order a seller works them: the board first,
+ * then the evidence behind it, then the plumbing that feeds it.
+ *
+ * They lead the org section under both profiles because they are the product.
+ * Projects and usage are platform plumbing beneath them.
+ */
+function NEXUS_LINKS(orgBase: string): NavLink[] {
+  return [
+    { href: `${orgBase}/exposure`, label: "Exposure", icon: "Map" },
+    { href: `${orgBase}/registrations`, label: "Registrations", icon: "Stamp" },
+    { href: `${orgBase}/ledger`, label: "Ledger", icon: "Receipt" },
+    { href: `${orgBase}/channels`, label: "Channels", icon: "Plug" },
+  ];
+}
+
 export function buildNavSections(scope: NavScope, soloMode: boolean = SOLO_MODE): NavSection[] {
   const sections: NavSection[] = [];
   const orgSlug = scope.orgSlug ?? null;
@@ -63,11 +79,13 @@ export function buildNavSections(scope: NavScope, soloMode: boolean = SOLO_MODE)
       label: soloMode ? "Account" : orgSlug ? `Org · ${orgSlug}` : "Organization",
       links: soloMode
         ? [
+            ...NEXUS_LINKS(orgBase),
             // Solo: projects & usage/quota are platform plumbing the B2C user
             // never sees; their surfaces collapse to the Settings (Account) panel.
             { href: `${orgBase}/settings`, label: "Settings", icon: "Settings", subPanel: true },
           ]
         : [
+            ...NEXUS_LINKS(orgBase),
             { href: `${orgBase}/projects`, label: "Projects", icon: "FolderKanban" },
             { href: `${orgBase}/usage`, label: "Usage & quota", icon: "Gauge" },
             // Opens the dedicated settings panel — flagged so the renderer shows a ›.

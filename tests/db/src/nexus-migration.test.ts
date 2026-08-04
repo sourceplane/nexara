@@ -28,6 +28,9 @@ const NEXUS_MIGRATION_IDS = [
   "220_nexus_rules",
   "230_nexus_determinations",
   "240_nexus_registrations",
+  // 250 seeds the synthetic rule set and creates no table, so it is covered by
+  // its own suite rather than by the structural assertions here.
+  "260_nexus_alert_contact",
 ] as const;
 
 function sqlFor(id: string): string {
@@ -282,6 +285,7 @@ describe("nexus migrations (NX1)", () => {
       "nexus.registrations",
       "nexus.alerts",
       "nexus.evaluation_watermarks",
+      "nexus.alert_contacts",
     ];
     const EXEMPT = ["nexus.rule_sets", "nexus.rules", "nexus.inbound_deliveries"];
 
@@ -320,6 +324,31 @@ describe("nexus migrations (NX1)", () => {
       for (const ref of ["membership.", "identity.", "billing.", "projects.", "integrations."]) {
         expect(ALL_NEXUS_SQL_NO_COMMENTS).not.toContain(ref);
       }
+    });
+  });
+
+  describe("R10 — where alerts go", () => {
+    const sql = sqlFor("260_nexus_alert_contact");
+
+    it("scopes the contact to one org, as the primary key", () => {
+      expect(sql).toMatch(/org_id\s+UUID PRIMARY KEY/i);
+    });
+
+    it("does not reference a user — the tax contact is often not one", () => {
+      // An accountant or a shared finance inbox has no console login.
+      // Requiring one would push sellers to name their own address and then
+      // never read the alert.
+      expect(sql).not.toMatch(/REFERENCES\s+identity\./i);
+      expect(sql).not.toMatch(/user_id/i);
+    });
+
+    it("bounds the address and requires an at-sign at the database", () => {
+      expect(sql).toMatch(/CHECK\s*\(length\(email\) BETWEEN 3 AND 254/i);
+      expect(sql).toMatch(/position\('@' IN email\) > 1/i);
+    });
+
+    it("is idempotent like every other migration in the context", () => {
+      expect(sql).toContain("CREATE TABLE IF NOT EXISTS nexus.alert_contacts");
     });
   });
 

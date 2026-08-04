@@ -39,6 +39,7 @@ import {
   ledgerImportCommand,
   ledgerListCommand,
   nexusEvaluateCommand,
+  nexusAlertContactCommand,
   nexusExposureCommand,
   nexusHistoryCommand,
   nexusJurisdictionShowCommand,
@@ -209,6 +210,7 @@ function buildRouter(opts: RunOptions): Router {
   r.register(["nexus", "jurisdiction", "show"], "Explain one jurisdiction's position and the rule behind it", nexusJurisdictionShowCommand);
   r.register(["nexus", "history"], "Show the determination history for a jurisdiction", nexusHistoryCommand);
   r.register(["nexus", "evaluate"], "Evaluate positions now (writes only changed ones)", nexusEvaluateCommand);
+  r.register(["nexus", "alert-contact"], "Show or set where threshold alerts are sent (--email, --label, --clear)", nexusAlertContactCommand);
   r.register(["ledger", "list"], "List sale events in the append-only ledger", ledgerListCommand);
   r.register(["ledger", "import"], "Import sale events from a JSON file", ledgerImportCommand);
   r.register(["registration", "list"], "List registration status per jurisdiction", registrationListCommand);

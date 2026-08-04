@@ -24,6 +24,8 @@ import {
   User2,
   Plug,
   GitBranch,
+  Map,
+  Stamp,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -51,6 +53,8 @@ const ICONS: Record<string, LucideIcon> = {
   User2,
   Plug,
   GitBranch,
+  Map,
+  Stamp,
 };
 
 /**
