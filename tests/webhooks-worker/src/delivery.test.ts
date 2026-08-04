@@ -842,7 +842,7 @@ describe("delivery payload structure", () => {
     });
 
     expect(lastHeaders["Content-Type"]).toBe("application/json");
-    expect(lastHeaders["User-Agent"]).toBe("nexara-Webhooks/1.0");
+    expect(lastHeaders["User-Agent"]).toBe("Nexara-Webhooks/1.0");
     expect(lastHeaders["X-Webhook-ID"]).toBeTruthy();
     expect(lastHeaders["X-Webhook-Timestamp"]).toBeTruthy();
   });

@@ -7,15 +7,15 @@ installation-token broker. Contract: `specs/components/17-integrations.md`.
 
 ## Recipe: act on GitHub from your product
 
-Your backend holds one nexara API key and **zero GitHub credentials**.
+Your backend holds one Nexara API key and **zero GitHub credentials**.
 Exchange it for a short-lived, repo-scoped installation token whenever you
 need to call GitHub — post a check run, read a file, set a deploy status:
 
 ```ts
-import { nexara } from "@saas/sdk";
+import { Nexara } from "@saas/sdk";
 import { Octokit } from "@octokit/rest";
 
-const nexara = new nexara({
+const nexara = new Nexara({
   baseUrl: process.env.NEXARA_API_URL!,
   token: process.env.NEXARA_API_KEY!, // service-principal key
 });

@@ -39,7 +39,7 @@
         "BILLING_PROVIDER": "polar",
         "POLAR_SERVER": "sandbox",
         "POLAR_PRODUCT_MAP": "{\"pro\":\"c3e33c12-1ec6-4843-aed1-10b21c6fcb4f\",\"business\":\"aefd7468-6f9f-4ebc-b373-31c852b9842a\"}",
-        "POLAR_SUCCESS_URL": "https://stage.nexara.orun.dev/"
+        "POLAR_SUCCESS_URL": "https://stage.nexara.dev/"
       },
       "hyperdrive": [
         {
@@ -62,7 +62,7 @@
         "BILLING_PROVIDER": "polar",
         "POLAR_SERVER": "production",
         "POLAR_PRODUCT_MAP": "{\"pro\":\"c711fc4c-74e2-47f5-991e-b940df833899\",\"business\":\"e2ba3e96-b97a-4348-82ef-87bcebad1d17\"}",
-        "POLAR_SUCCESS_URL": "https://prod.nexara.orun.dev/"
+        "POLAR_SUCCESS_URL": "https://prod.nexara.dev/"
       },
       "hyperdrive": [
         {
