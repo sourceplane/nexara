@@ -11,6 +11,7 @@ export interface Env {
   NOTIFICATIONS_WORKER?: Fetcher;
   INTEGRATIONS_WORKER?: Fetcher;
   NEXUS_WORKER?: Fetcher;
+  CHANNELS_WORKER?: Fetcher;
   // Optional KV binding backing the Stripe-style idempotency replay store
   // (Task 0095). Absent on `dev` (no live worker) and absent on the older
   // verify-only stages. When unbound, `replayOrExecute` degrades to a

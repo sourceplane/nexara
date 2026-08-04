@@ -6,7 +6,12 @@ import { handlePreflight, applyCorsHeaders } from "./cors";
 import { isAuthRoute, handleAuthRoute } from "./auth-facade";
 import { isOrgRoute, handleOrgRoute } from "./org-facade";
 import { isProjectRoute, handleProjectRoute } from "./project-facade";
-import { isNexusRoute, handleNexusRoute } from "./nexus-facade";
+import {
+  isNexusRoute,
+  handleNexusRoute,
+  isChannelIngressRoute,
+  handleChannelIngressRoute,
+} from "./nexus-facade";
 import { isAuditRoute, handleAuditRoute } from "./audit-facade";
 import { isConfigRoute, handleConfigRoute } from "./config-facade";
 import { isWebhooksRoute, handleWebhooksRoute } from "./webhooks-facade";
@@ -69,6 +74,10 @@ export default {
       response = await handleMeteringRoute(request, env, requestId, url.pathname);
     } else if (isBillingRoute(url.pathname)) {
       response = await handleBillingRoute(request, env, requestId, url.pathname);
+    } else if (isChannelIngressRoute(url.pathname)) {
+      // Public provider webhook (no session), matched before the authenticated
+      // facade. The gate is the signature, verified in channels-worker.
+      response = await handleChannelIngressRoute(request, env, requestId, url.pathname);
     } else if (isNexusRoute(url.pathname)) {
       // BEFORE isOrgRoute: every nexus route lives under
       // /v1/organizations/:orgId/… and the org facade's pattern would
