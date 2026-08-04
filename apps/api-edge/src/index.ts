@@ -6,6 +6,7 @@ import { handlePreflight, applyCorsHeaders } from "./cors";
 import { isAuthRoute, handleAuthRoute } from "./auth-facade";
 import { isOrgRoute, handleOrgRoute } from "./org-facade";
 import { isProjectRoute, handleProjectRoute } from "./project-facade";
+import { isNexusRoute, handleNexusRoute } from "./nexus-facade";
 import { isAuditRoute, handleAuditRoute } from "./audit-facade";
 import { isConfigRoute, handleConfigRoute } from "./config-facade";
 import { isWebhooksRoute, handleWebhooksRoute } from "./webhooks-facade";
@@ -68,6 +69,11 @@ export default {
       response = await handleMeteringRoute(request, env, requestId, url.pathname);
     } else if (isBillingRoute(url.pathname)) {
       response = await handleBillingRoute(request, env, requestId, url.pathname);
+    } else if (isNexusRoute(url.pathname)) {
+      // BEFORE isOrgRoute: every nexus route lives under
+      // /v1/organizations/:orgId/… and the org facade's pattern would
+      // otherwise swallow them.
+      response = await handleNexusRoute(request, env, requestId, url.pathname);
     } else if (isProjectRoute(url.pathname)) {
       response = await handleProjectRoute(request, env, requestId, url.pathname);
     } else if (isOrgRoute(url.pathname)) {

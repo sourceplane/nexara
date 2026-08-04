@@ -1,8 +1,8 @@
 apiVersion: sourceplane.io/v1
 kind: Component
 metadata:
-  name: api-edge
-  description: Cloudflare Worker for the API edge Runtime
+  name: nexus-worker
+  description: Cloudflare Worker for the nexus runtime — the sale-event ledger, the determination engine, and determinations
 spec:
   docs:
     overview: docs/overview.md
@@ -12,30 +12,19 @@ spec:
   type: cloudflare-worker-turbo
   lifecycle: production
   owner: platform
-  domain: starter-runtime
-  path: apps/api-edge
+  domain: nexus
+  path: apps/nexus-worker
   dependsOn:
-    - component: cloudflare-hyperdrive
-    - component: cloudflare-kv
-    - component: projects-worker
-    - component: events-worker
-    - component: config-worker
-    - component: webhooks-worker
-    - component: billing-worker
-    - component: integrations-worker
-    - component: identity-worker
     - component: membership-worker
-    - component: metering-worker
+    - component: policy-worker
+    - component: events-worker
     - component: notifications-worker
-    - component: nexus-worker
   # BF6 wiring documents from orun secrets (SEC-JOB): lease-published by
   # the infra components; wire-live renders the wrangler template from
   # these instead of Secrets Manager documents.
   secretEnv:
     WIRING_CLOUDFLARE_HYPERDRIVE_STAGE: "secret://nexara/nexara/stage/WIRING_CLOUDFLARE_HYPERDRIVE"
     WIRING_CLOUDFLARE_HYPERDRIVE_PROD: "secret://nexara/nexara/prod/WIRING_CLOUDFLARE_HYPERDRIVE"
-    WIRING_CLOUDFLARE_KV_STAGE: "secret://nexara/nexara/stage/WIRING_CLOUDFLARE_KV"
-    WIRING_CLOUDFLARE_KV_PROD: "secret://nexara/nexara/prod/WIRING_CLOUDFLARE_KV"
 
   subscribe:
     environments:
@@ -56,39 +45,31 @@ spec:
   parameters:
     nodeVersion: "22"
     pnpmVersion: "10.12.1"
-
     workspaceDir: ../..
     appDir: .
-
-    turboFilter: "@saas/api-edge"
-    wranglerConfig: wrangler.jsonc
-
-    # BF6 deploy-time wiring (pilot): wrangler.jsonc is rendered, never
-    # committed. Verify lanes render from wiring.fixture.json (offline);
-    # deploy lanes resolve real IDs from the Secrets Manager wiring manifest
-    # published by the named infra components (BF5).
-    wranglerTemplate: wrangler.template.jsonc
-    wiringComponents: "cloudflare-hyperdrive,cloudflare-kv"
-    wiringEnvs: "stage,prod"
-    wiringFixture: wiring.fixture.json
+    # BF6b: deploy-time wiring — wrangler.jsonc is rendered, never committed.
+    # Verify lanes render from wiring.fixture.json (offline); deploy lanes
+    # resolve real IDs from the Secrets Manager wiring manifest (BF5).
     orgName: sourceplane
     owner: sourceplane
     repo: nexara
 
+    turboFilter: "@saas/nexus-worker"
+    wranglerConfig: wrangler.jsonc
+    wranglerTemplate: wrangler.template.jsonc
+    wiringComponents: "cloudflare-hyperdrive"
+    wiringEnvs: "stage,prod"
+    wiringFixture: wiring.fixture.json
     installCommand: pnpm install --frozen-lockfile
-    buildCommand: pnpm exec turbo run build --filter=@saas/api-edge
-    typecheckCommand: pnpm exec turbo run typecheck --filter=@saas/api-edge
-
+    buildCommand: pnpm exec turbo run build --filter=@saas/nexus-worker
+    typecheckCommand: pnpm exec turbo run typecheck --filter=@saas/nexus-worker
     dryRunCommand: pnpm exec wrangler deploy --dry-run --config wrangler.jsonc --env prod
     deployCommand: pnpm exec wrangler deploy --config wrangler.jsonc --env prod
-
     preDeployCommand: "echo 'No pre-deploy step configured.'"
     migrationCommand: "echo 'No migrations configured.'"
     smokeCommand: "echo 'No smoke test configured.'"
   labels:
     team: platform
     layer: runtime
-    surface: api
+    surface: nexus
     runtime: cloudflare
-# ci: re-trigger deploy (batch C — integrations + api-edge gateway, 20260622T141448Z)
-# ci: re-trigger deploy (batch C — integrations + api-edge gateway, 20260622T141448Z)

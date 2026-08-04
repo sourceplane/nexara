@@ -36,6 +36,16 @@ import {
 } from "./commands/notification-preferences.js";
 import { integrationsGithubTokenCommand } from "./commands/integrations-token.js";
 import {
+  ledgerImportCommand,
+  ledgerListCommand,
+  nexusEvaluateCommand,
+  nexusExposureCommand,
+  nexusHistoryCommand,
+  nexusJurisdictionShowCommand,
+  registrationListCommand,
+  registrationSetCommand,
+} from "./commands/nexus.js";
+import {
   usageSummaryCommand,
   billingSummaryCommand,
   auditListCommand,
@@ -192,6 +202,17 @@ function buildRouter(opts: RunOptions): Router {
   r.register(["notifications", "preferences"], "Show your email notification preferences for an org", notificationPreferencesGetCommand);
   r.register(["notifications", "preferences", "set"], "Enable/disable an email notification category", notificationPreferencesSetCommand);
   r.register(["integrations", "github", "token"], "Mint a short-lived, repo-scoped GitHub installation token", integrationsGithubTokenCommand);
+  // Nexus — the product surface. Every command has --output json parity,
+  // because the epic verifies backend milestones by an authenticated CLI
+  // walkthrough on stage rather than by clicking.
+  r.register(["nexus", "exposure"], "Show the economic-nexus exposure board", nexusExposureCommand);
+  r.register(["nexus", "jurisdiction", "show"], "Explain one jurisdiction's position and the rule behind it", nexusJurisdictionShowCommand);
+  r.register(["nexus", "history"], "Show the determination history for a jurisdiction", nexusHistoryCommand);
+  r.register(["nexus", "evaluate"], "Evaluate positions now (writes only changed ones)", nexusEvaluateCommand);
+  r.register(["ledger", "list"], "List sale events in the append-only ledger", ledgerListCommand);
+  r.register(["ledger", "import"], "Import sale events from a JSON file", ledgerImportCommand);
+  r.register(["registration", "list"], "List registration status per jurisdiction", registrationListCommand);
+  r.register(["registration", "set"], "Record registration status for a jurisdiction", registrationSetCommand);
   return r;
 }
 
@@ -237,6 +258,18 @@ function printHelp(stdout: (line: string) => void): void {
       "                         [--actor=ID] [--actor-type=TYPE] [--subject-kind=KIND]",
       "                         [--subject-id=ID] [--event-type=TYPE] [--from=ISO] [--to=ISO]",
       "                         [--format=ndjson]",
+      "",
+      "NEXUS (economic-nexus monitoring):",
+      `  ${CLI_BIN} nexus exposure [--org=ORG_ID] [--output=human|json]`,
+      `  ${CLI_BIN} nexus jurisdiction show <code> [--org=ORG_ID]`,
+      `  ${CLI_BIN} nexus history <code> [--org=ORG_ID]`,
+      `  ${CLI_BIN} nexus evaluate [--as-of=ISO] [--org=ORG_ID]`,
+      "",
+      "LEDGER / REGISTRATIONS:",
+      `  ${CLI_BIN} ledger list [--jurisdiction=CODE] [--kind=sale|refund] [--limit=N] [--cursor=CURSOR]`,
+      `  ${CLI_BIN} ledger import --file=PATH [--idempotency-key=KEY]`,
+      `  ${CLI_BIN} registration list [--org=ORG_ID]`,
+      `  ${CLI_BIN} registration set <code> --status=planned|filed|active|closed [--registered-on=YYYY-MM-DD]`,
       "",
       "SECURITY:",
       `  ${CLI_BIN} security events [--limit=N] [--cursor=CURSOR] [--all] [--output=human|json]`,

@@ -228,5 +228,14 @@ export const manifest: MigrationManifest = {
       description:
         "Seller registration state, the append-only alert log whose unique index is the exactly-once guarantee, and the per-org evaluation watermark keyed on ingested_at",
     },
+    {
+      id: "250_nexus_synthetic_rule_set",
+      context: "nexus",
+      path: "250_nexus_synthetic_rule_set/up.sql",
+      checksum:
+        "d3206f8c610b645049651c7475a6c84890cf136c80f66c937305925d0e734bb4",
+      description:
+        "The UNVERIFIED starter rule set (NX4) — 51 US jurisdictions plus two display-only international rows, covering every measurement basis, period, marketplace treatment, threshold logic, and deadline variant. verified = false by design §11: every determination it produces is internal-only until a named human with tax-practice accountability verifies a set against primary sources (Q1)",
+    },
   ],
 };

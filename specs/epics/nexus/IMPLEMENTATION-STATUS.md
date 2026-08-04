@@ -12,12 +12,84 @@
 | NX1.5 | **Done** | Gate — 12 findings; 8 fixed, 4 accepted in writing ([`schema-review.md`](./schema-review.md)) |
 | NX2 | **Done** | Determination engine + boundary, purity, and reproducibility tests |
 | NX3 | **Done** | Aggregation, ledger append, tenant-scoping CI scan |
-| NX4 | Not started | `nexus-worker` + edge facade + SDK + CLI |
+| NX4 | **Done** | `nexus-worker` + edge facade + SDK + CLI |
 | NX5 | Not started | Evaluation cron, determinations, alerts |
 | NX6 | Not started | `channels-worker` + Stripe |
 | NX7 | Not started | Shopify adapter |
 | NX8 | Not started | Console |
 | NX9 | Not started | Entitlements, demo tenant, docs, verification |
+
+## As-built — NX4 (worker, edge, SDK, CLI)
+
+The read product end to end, over a ledger that can be seeded. This closes the
+demo cut apart from NX8's exposure board.
+
+- `apps/nexus-worker` becomes a real worker: `component.yaml`,
+  `wrangler.template.jsonc`, `wiring.fixture.json`, docs, and handlers for
+  `list-exposure`, `get-jurisdiction`, `evaluate`, `import-ledger`,
+  `list-ledger`, `registrations`, `health`.
+- `apps/api-edge/src/nexus-facade.ts`, registered **before** `isOrgRoute`;
+  `NEXUS_WORKER` in `env.ts` and both wrangler environments; a `nexus`
+  `RouteFamily` and rate-limit entry; `"nexus"` as its own idempotency
+  namespace.
+- `packages/sdk/src/nexus.ts` — `client.exposure`, `client.ledger`,
+  `client.registrations`, with the nexus contract types re-exported.
+- `packages/cli/src/commands/nexus.ts` — eight commands, all with
+  `--output json` parity.
+- `packages/db/src/migrations/250_nexus_synthetic_rule_set/up.sql`.
+
+### Observability is wired here, not at NX9
+
+Design §12 asks for `observability: { enabled: true }` on both new workers, and
+NX4 is where it lands rather than NX9 — logging retrofitted after the
+connectors exist is logging designed around what already broke. This is the
+first worker in the repo to set it; if it proves out it should be lifted to the
+rest of the fleet as its own change, not smuggled in through this epic.
+
+### The synthetic rule set, and why a migration seeds it
+
+Nothing in NX0–NX3 could actually be *run*: the engine needs rules, and no
+rules existed. `250_nexus_synthetic_rule_set` seeds 51 US jurisdictions plus
+two display-only international rows, covering every measurement basis, all
+three periods, both marketplace treatments, all five threshold logics, and
+every deadline-rule variant — including explicit `threshold_logic = 'none'`
+rows for Alaska, Delaware, Montana, New Hampshire, and Oregon.
+
+**It is `verified = false`, and that is the point.** Q1 is open, and design
+§11's gate holds: every determination produced from it is written with
+`internal_only = true`, no customer-facing alert fires, and the CLI prints a
+banner instead of a bare status. The engine, the ledger, the board, and the
+evidence trail are all exercisable end to end; what is *not* exercisable is
+telling a customer they owe something, which is exactly the claim we have no
+basis to make yet.
+
+### Two structural decisions
+
+1. **`src/evaluation.ts` is not a handler.** The `POST /evaluate` handler and
+   NX5's cron must run identically — a cron that re-implements a handler is how
+   the two drift until a support question can no longer be answered by pressing
+   the button. It reads no clock; `asOf` is a parameter, exactly as in the
+   engine.
+2. **`handlers/gate.ts` is one function, not six copies.** A gate that is
+   subtly different in one handler is the bug this whole design exists to make
+   impossible, and six copies is six chances.
+
+### One thing the first draft got wrong
+
+`list-exposure` originally reimplemented the meter's max-under-`either` /
+min-under-`both` rule locally, with a comment promising the two copies would
+agree. That is a promise, and this is a product that sells against promises.
+The engine is pure and synchronous, so both handlers now call
+`evaluateThreshold` and there is exactly one definition of what the meter
+means.
+
+### Verification
+
+- 171 tests in `tests/nexus-worker` (was 144). The new suite drives the real
+  membership and policy `Fetcher` stubs rather than stubbing the gate, because
+  the thing most worth testing is that a handler cannot forget to run it.
+- `pnpm typecheck` 50/50, `pnpm lint` 43/43, `pnpm test` 29/29 packages.
+- `wrangler deploy --dry-run` succeeds against the rendered fixture config.
 
 ## As-built — NX3 (aggregation and the ledger)
 
