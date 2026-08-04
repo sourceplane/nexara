@@ -16,6 +16,13 @@
 -- determination made under 2026.08 stays evaluable under 2026.08 forever, even
 -- after 2027.01 lands. That is what makes invariant 3 hold across years.
 
+-- Required by the range-overlap EXCLUDE constraint below (NX1.5 finding S-4).
+-- btree_gist lets a GiST index carry the scalar equality columns alongside the
+-- daterange, which is what makes "no two rules for the same jurisdiction in
+-- the same set may overlap in time" expressible as a constraint rather than as
+-- a hope about how rule sets get authored. Ships with Supabase Postgres.
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
 CREATE TABLE IF NOT EXISTS nexus.rule_sets (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   -- Human-ordered, e.g. '2026.08.01'.
@@ -48,7 +55,15 @@ CREATE INDEX IF NOT EXISTS nexus_rule_sets_published_idx
 
 CREATE TABLE IF NOT EXISTS nexus.rules (
   id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  rule_set_id               UUID NOT NULL REFERENCES nexus.rule_sets (id) ON DELETE CASCADE,
+  -- NX1.5 finding S-5: RESTRICT, not CASCADE.
+  --
+  -- The first draft cascaded. A determination stores `rule_id` and re-running
+  -- the engine against it is the product's whole defence; cascading a rule set
+  -- delete would silently destroy that evidence and leave determinations
+  -- pointing at nothing. Rule sets are additive and are never deleted in
+  -- normal operation — so the only time this constraint fires is the one time
+  -- it must.
+  rule_set_id               UUID NOT NULL REFERENCES nexus.rule_sets (id) ON DELETE RESTRICT,
 
   -- 'US-CA', 'US-TX' for states; a bare ISO country code ('GB', 'DE') for the
   -- international VAT/GST registration thresholds. Nothing in this schema
@@ -125,6 +140,26 @@ CREATE TABLE IF NOT EXISTS nexus.rules (
     registration_deadline_rule ->> 'kind' IN (
       'days_after_crossing', 'first_of_next_month', 'end_of_next_month',
       'first_of_next_quarter', 'first_of_month_after_days', 'none')
+  ),
+
+  -- NX1.5 finding S-4. Within one rule set, a jurisdiction's rules must
+  -- partition time — no two may be in force on the same day.
+  --
+  -- The unique index on (rule_set_id, jurisdiction, effective_from) below
+  -- stops two rules *starting* together, which is what a first reading catches
+  -- and is not enough: two rules with different starts and open ends are both
+  -- in force forever after the later one begins. "The rule in force on date D"
+  -- then has two answers, the lookup picks one by ORDER BY, and design §5.3
+  -- case 3 — splitting a window at a mid-window rule change — silently
+  -- measures the wrong segment. That is R2's "confidently wrong answer, and
+  -- because determinations are immutable it persists in the record".
+  --
+  -- A NULL effective_to makes the daterange unbounded above, which is exactly
+  -- "still in force", so the constraint needs no sentinel date.
+  CONSTRAINT nexus_rules_no_overlap_excl EXCLUDE USING gist (
+    rule_set_id WITH =,
+    jurisdiction WITH =,
+    daterange(effective_from, effective_to, '[)') WITH &&
   )
 );
 

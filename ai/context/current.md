@@ -30,13 +30,20 @@ date: **15 September 2026**.
 
 - ~~**NX0** — reframe `README.md` and `intent.yaml` from "starter" to Nexara,
   and author `docs/overview.md` as the catalog front page.~~ **Done.**
-- **NX1 → NX4** — contracts and schema, the pure determination engine,
-  aggregation, then the worker/edge/SDK/CLI slice. This is the demo cut.
-- **NX1.5 is a hard gate between NX1 and NX3.** The schema and tenant-isolation
-  review is written down in `schema-review.md` before the aggregation is built
-  on the schema. Do not skip it because the migrations "look fine" — that is the
-  state in which it is cheapest to act on a finding, which is the whole point.
+- ~~**NX1** — contracts and schema.~~ **Done.** Migrations `200`–`240`,
+  `@saas/contracts/{nexus,channels}`, the nine RBAC actions.
+- ~~**NX1.5** — the schema and tenant-isolation gate.~~ **Done.** 12 findings
+  in [`schema-review.md`](../../specs/epics/nexus/schema-review.md); 8 fixed
+  into the NX1 migrations before they were applied anywhere, 4 accepted in
+  writing. Two carry forward as **NX3 requirements**: the CI tenancy scan must
+  also fail `nexus.`/`channels.` SQL found outside the repository module
+  (S-11), and `appendSaleEvents` must distinguish an identical duplicate from a
+  differing one (S-8).
+- **NX2 → NX4** — the pure determination engine, aggregation, then the
+  worker/edge/SDK/CLI slice. With NX1 done this is the rest of the demo cut.
 - Two questions to answer before they get expensive: who publishes and verifies
   rule sets (Q1), and whether the tenant is a seller or an accounting firm
-  holding many sellers (Q2). Q4, Q5, and Q6 gate NX6. All in
+  holding many sellers (Q2). Q4, Q5, and Q6 gate NX6. **R9** (a provider
+  amending an already-ingested event is silently dropped) is new from the
+  NX1.5 review. All in
   [`risks-and-open-questions.md`](../../specs/epics/nexus/risks-and-open-questions.md).

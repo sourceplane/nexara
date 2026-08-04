@@ -188,7 +188,7 @@ export const manifest: MigrationManifest = {
       context: "nexus",
       path: "200_nexus_core/up.sql",
       checksum:
-        "2dfe062217b3ee7f840708e971e20b66c30fcc8297137de8f6935376602ea4b5",
+        "2873326c14359486494fcff32ac4766218ac810556980c1e3baff6bcf5a81021",
       description:
         "Nexus persistence foundation (NX1) — connected sales channels and the append-only sale-event ledger, with the dedupe unique index that IS the idempotency guarantee and the single-scan aggregation index",
     },
@@ -197,7 +197,7 @@ export const manifest: MigrationManifest = {
       context: "channels",
       path: "210_nexus_ingestion/up.sql",
       checksum:
-        "8b66a3424ef60d06ff51447b4834d99cf81b9e8c4d58ec50070797540d8c6a17",
+        "ce823cce237f1ee0ef68752c926fdf7add6e1097ad2ae0abb10b0a4a7d13e8c1",
       description:
         "Durable inbound-delivery inbox drained by the channels-worker cron — unique on (provider, provider_delivery_id), due-work partial index, and a retention pointer for the raw provider payload",
     },
@@ -206,7 +206,7 @@ export const manifest: MigrationManifest = {
       context: "nexus",
       path: "220_nexus_rules/up.sql",
       checksum:
-        "7642d765763e96e5d0446d96e8818e83129df76c44c07e96884d1a6f425661f6",
+        "856db92aad3e4b7af4fe77112a6a15bd5e44e1e88e1fa43b0123389f351e4041",
       description:
         "Versioned rule sets and per-jurisdiction rules — GLOBAL reference data, deliberately not tenant-scoped, with the verified gate and constraints tying threshold_logic to the threshold columns it needs",
     },
@@ -215,7 +215,7 @@ export const manifest: MigrationManifest = {
       context: "nexus",
       path: "230_nexus_determinations/up.sql",
       checksum:
-        "ca604de6e624eae7186824ab51361e446a7b4f286acfa6d01c91ef0a4fb1c0d4",
+        "c7bd552851902f9208e4195791848e609e7a7aab05a5e6ab9e99c32390960289",
       description:
         "The immutable determination record — the reproducibility triple (rule_set_version, rule_id, engine_version) plus the exact inputs, never updated, with the internal-only flag carrying the unverified-rule-set gate",
     },
@@ -224,7 +224,7 @@ export const manifest: MigrationManifest = {
       context: "nexus",
       path: "240_nexus_registrations/up.sql",
       checksum:
-        "0e3d0b5d131a046fc39421949fc0d1ccb8c913e9a8d9eb51f86636acf3e1751e",
+        "0f5b122439ca6a06052ec2716ca9f0c8462f7b7c24736e1ba09ed7dae1698cb4",
       description:
         "Seller registration state, the append-only alert log whose unique index is the exactly-once guarantee, and the per-org evaluation watermark keyed on ingested_at",
     },

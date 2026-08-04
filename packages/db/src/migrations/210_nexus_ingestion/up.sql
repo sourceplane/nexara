@@ -35,7 +35,16 @@ CREATE TABLE IF NOT EXISTS nexus.inbound_deliveries (
   provider             TEXT NOT NULL
                          CHECK (provider IN ('stripe', 'shopify', 'csv')),
   provider_delivery_id TEXT NOT NULL,
-  payload              JSONB NOT NULL,
+
+  -- NX1.5 finding S-3: NULLABLE, deliberately.
+  --
+  -- The first draft had this NOT NULL, which made the retention policy
+  -- unimplementable: purging the PII would have required deleting the row,
+  -- and deleting the row destroys the (provider, provider_delivery_id) dedupe
+  -- key — so a provider redelivering an old webhook after the purge window
+  -- would be re-applied. The row is the receipt; the payload is the PII.
+  -- Purging nulls the payload and keeps the receipt.
+  payload              JSONB,
 
   -- Recorded, not assumed. An unsigned or wrongly-signed delivery is rejected
   -- at the edge and never reaches the inbox; this column exists so that a row
@@ -54,7 +63,19 @@ CREATE TABLE IF NOT EXISTS nexus.inbound_deliveries (
 
   -- A payload cannot be purged before it has been applied or terminally
   -- failed; retention starts at that point, not at receipt.
-  purged_at            TIMESTAMPTZ
+  purged_at            TIMESTAMPTZ,
+
+  -- NX1.5 finding S-3. The two states are exhaustive and mutually exclusive:
+  -- a live delivery has its payload, a purged one has none. Without this a
+  -- half-purged row (payload nulled, purged_at unset) is indistinguishable
+  -- from a delivery that arrived with an empty body.
+  CONSTRAINT nexus_inbound_deliveries_purge_ck
+    CHECK ((purged_at IS NULL) = (payload IS NOT NULL)),
+
+  -- A payload may only be purged once the delivery has reached a terminal
+  -- state. Purging a 'received' row destroys work the drain has not done yet.
+  CONSTRAINT nexus_inbound_deliveries_purge_terminal_ck
+    CHECK (purged_at IS NULL OR status IN ('applied', 'skipped', 'failed'))
 );
 
 COMMENT ON TABLE nexus.inbound_deliveries IS

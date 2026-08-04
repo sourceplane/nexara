@@ -82,6 +82,24 @@ export const DETERMINATION_STATUSES = [
 ] as const;
 export type DeterminationStatus = (typeof DETERMINATION_STATUSES)[number];
 
+/**
+ * The subset the **engine** can produce (NX1.5 finding S-7).
+ *
+ * `"registered"` is not an engine output and cannot be: the engine is pure
+ * and is handed an aggregate and a rule, neither of which knows whether the
+ * seller has registered. It is applied over the top by the board projection,
+ * from `nexus.registrations`. Typing `DeterminationOutcome.status` as the full
+ * union invited a caller to expect the engine to return it — and then to write
+ * a branch that never runs.
+ */
+export const ENGINE_STATUSES = [
+  "no_obligation",
+  "clear",
+  "approaching",
+  "crossed",
+] as const;
+export type EngineStatus = (typeof ENGINE_STATUSES)[number];
+
 /** How a sale event reached the ledger. */
 export const SALE_EVENT_SOURCES = ["backfill", "webhook", "csv"] as const;
 export type SaleEventSource = (typeof SALE_EVENT_SOURCES)[number];
@@ -359,7 +377,8 @@ export interface DeterminationInputs {
 
 /** What the engine returns. Every field is a pure function of the inputs and the rule. */
 export interface DeterminationOutcome {
-  status: DeterminationStatus;
+  /** Never `"registered"` — see `EngineStatus`. */
+  status: EngineStatus;
   measuredSalesCents: number;
   measuredTransactions: number;
   thresholdSalesCents: number | null;

@@ -9,7 +9,7 @@
 |----|--------|-------|
 | NX0 | **Done** | Charter landed; repo + catalog reframed to Nexara; `docs/overview.md` is the front page |
 | NX1 | **Done** | Contracts, migrations `200`–`240`, RBAC actions |
-| NX1.5 | Not started | Gate — adversarial schema + isolation review, `schema-review.md` |
+| NX1.5 | **Done** | Gate — 12 findings; 8 fixed, 4 accepted in writing ([`schema-review.md`](./schema-review.md)) |
 | NX2 | Not started | Determination engine + boundary and reproducibility tests |
 | NX3 | Not started | Aggregation, ledger append, tenant-scoping CI scan |
 | NX4 | Not started | `nexus-worker` + edge facade + SDK + CLI |
@@ -18,6 +18,48 @@
 | NX7 | Not started | Shopify adapter |
 | NX8 | Not started | Console |
 | NX9 | Not started | Entitlements, demo tenant, docs, verification |
+
+## As-built — NX1.5 (the schema and isolation review gate)
+
+`specs/epics/nexus/schema-review.md` — 12 findings, each with a severity and a
+disposition. Seven changed the migrations and one changed the contracts; four
+are accepted in writing with the reason stated.
+
+The gate ran **before** the NX1 migrations were applied anywhere: CI's
+`db-migrate` job on the NX1 PR runs `mode=plan`, so acting on a finding cost a
+checksum bump rather than a migration plus a backfill plus a rewritten
+determination history. That sequencing is the entire point of the milestone
+carrying a `.5`.
+
+**What the review changed.** The largest result is that design §7.3's tradeoff
+— "RLS is defence-in-depth against a repository bug; query scoping has none" —
+is now too pessimistic for the **write path**. Three composite foreign keys
+(`sale_events.reverses_event_id`, `sale_events.channel_id`,
+`alerts.determination_id`, each scoped `(org_id, …)`) mean a handler with
+broken org scoping can no longer write a row that references another tenant.
+That costs two unique indexes and no runtime. Reads remain exactly as exposed
+as the doc says, which is finding S-11 and stays open against Q5.
+
+Three findings were latent bugs rather than hardening:
+
+- **S-3** — `inbound_deliveries.payload` was `NOT NULL`, which made Q6's
+  retention policy unimplementable: purging the PII would have required
+  deleting the row, and the row is the dedupe receipt, so a provider
+  redelivering after the purge window would have been re-applied and
+  double-counted. The column is now nullable with paired CHECK constraints.
+- **S-4** — two rules for the same jurisdiction could be in force on the same
+  day (the unique index stopped two rules *starting* together, which is not the
+  failure that happens). An `EXCLUDE USING gist` over `daterange` now makes a
+  rule set partition time. This adds `btree_gist` — the only extension this
+  context requires.
+- **S-5** — `rules.rule_set_id` cascaded on delete, which would have destroyed
+  the rules that determinations cite. Now `RESTRICT`.
+
+**What it accepted.** S-8 is the sharpest finding and cannot be fixed in the
+schema: a provider re-sending the same event id with *different amounts* is
+silently dropped by `ON CONFLICT DO NOTHING`, and an append-only ledger has no
+correction path. Accepted, with two named behavioural requirements on NX3 and
+NX6 and a new register entry, **R9**.
 
 ## As-built — NX1 (contracts and schema)
 

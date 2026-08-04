@@ -81,6 +81,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS nexus_channels_live_account_idx
 CREATE INDEX IF NOT EXISTS nexus_channels_org_created_idx
   ON nexus.channels (org_id, created_at DESC, id DESC);
 
+-- NX1.5 finding S-2. Composite unique target for the tenant-scoped FK from
+-- sale_events. A bare `channel_id UUID` lets a repository bug attribute a
+-- ledger row to another tenant's channel; with this the database refuses it.
+-- Same pattern as projects_org_id_id_idx.
+CREATE UNIQUE INDEX IF NOT EXISTS nexus_channels_org_id_id_idx
+  ON nexus.channels (org_id, id);
+
 -- Drives the staleness sweep in the hourly job: live channels ordered by how
 -- long they have been quiet.
 CREATE INDEX IF NOT EXISTS nexus_channels_staleness_idx
@@ -139,7 +146,14 @@ CREATE TABLE IF NOT EXISTS nexus.sale_events (
            AND taxable_cents >= 0 AND transaction_count >= 0)),
   CONSTRAINT nexus_sale_events_refund_sign_ck
     CHECK (kind <> 'refund' OR (gross_cents <= 0 AND retail_cents <= 0
-           AND taxable_cents <= 0 AND transaction_count <= 0))
+           AND taxable_cents <= 0 AND transaction_count <= 0)),
+
+  -- NX1.5 finding S-2. Tenant-scoped, so a ledger row cannot claim another
+  -- tenant's channel even if the handler's org scoping is wrong. Design §7.3
+  -- accepts that query scoping has no second line of defence; for the write
+  -- path, this composite FK is one.
+  CONSTRAINT nexus_sale_events_channel_fk
+    FOREIGN KEY (org_id, channel_id) REFERENCES nexus.channels (org_id, id)
 );
 
 COMMENT ON TABLE nexus.sale_events IS
@@ -174,3 +188,29 @@ CREATE INDEX IF NOT EXISTS nexus_sale_events_reverses_idx
 -- last run" (design §8 step 1), without scanning the ledger by org.
 CREATE INDEX IF NOT EXISTS nexus_sale_events_ingested_idx
   ON nexus.sale_events (ingested_at DESC, org_id);
+
+-- NX1.5 finding S-1. Composite unique target for the tenant-scoped reversal
+-- FK below.
+CREATE UNIQUE INDEX IF NOT EXISTS nexus_sale_events_org_id_id_idx
+  ON nexus.sale_events (org_id, id);
+
+-- NX1.5 finding S-1. A refund must reverse a row belonging to the SAME
+-- tenant. Without this, `reverses_event_id` is a bare UUID: an import that
+-- echoes back an id it was handed — or a repository bug — produces a ledger
+-- whose internal consistency cannot be proven, and the console's "reversal
+-- linked to its original" join either renders broken or reaches across
+-- tenants. Self-referential and composite, so it cannot be declared inline;
+-- the guard makes re-application a no-op.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'nexus_sale_events_reverses_fk'
+      AND conrelid = 'nexus.sale_events'::regclass
+  ) THEN
+    ALTER TABLE nexus.sale_events
+      ADD CONSTRAINT nexus_sale_events_reverses_fk
+      FOREIGN KEY (org_id, reverses_event_id)
+      REFERENCES nexus.sale_events (org_id, id);
+  END IF;
+END $$;

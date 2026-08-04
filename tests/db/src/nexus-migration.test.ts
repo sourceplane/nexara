@@ -199,6 +199,79 @@ describe("nexus migrations (NX1)", () => {
     });
   });
 
+  // NX1.5 findings S-1, S-2, S-5, S-6. Design §7.3 says query scoping has no
+  // second line of defence against a repository bug. For the WRITE path that
+  // is no longer true, and these four constraints are why — so removing one
+  // silently restores the weaker property the doc describes.
+  describe("NX1.5 — the write path's second line of defence", () => {
+    it("scopes the reversal FK to the tenant", () => {
+      const sql = sqlFor("200_nexus_core");
+      expect(sql).toContain("nexus_sale_events_reverses_fk");
+      expect(sql).toMatch(
+        /FOREIGN KEY \(org_id, reverses_event_id\)\s*\n?\s*REFERENCES nexus\.sale_events \(org_id, id\)/,
+      );
+      expect(sql).toContain("nexus_sale_events_org_id_id_idx");
+    });
+
+    it("scopes the channel FK to the tenant", () => {
+      const sql = sqlFor("200_nexus_core");
+      expect(sql).toContain("nexus_sale_events_channel_fk");
+      expect(sql).toMatch(
+        /FOREIGN KEY \(org_id, channel_id\) REFERENCES nexus\.channels \(org_id, id\)/,
+      );
+      expect(sql).toContain("nexus_channels_org_id_id_idx");
+    });
+
+    it("scopes the alert's determination FK to the tenant", () => {
+      expect(sqlFor("240_nexus_registrations")).toMatch(
+        /FOREIGN KEY \(org_id, determination_id\)\s*\n?\s*REFERENCES nexus\.determinations \(org_id, id\)/,
+      );
+      expect(sqlFor("230_nexus_determinations")).toContain(
+        "nexus_determinations_org_id_id_idx",
+      );
+    });
+
+    it("restricts rather than cascades a rule-set delete", () => {
+      // A cascade would destroy the rules that determinations cite — the
+      // product's entire defence — with no error at the moment it matters.
+      const sql = sqlFor("220_nexus_rules");
+      expect(sql).toContain("ON DELETE RESTRICT");
+      expect(sql).not.toContain("ON DELETE CASCADE");
+    });
+  });
+
+  describe("NX1.5 — rules partition time", () => {
+    it("excludes overlapping effective ranges within a rule set", () => {
+      // Unique on (rule_set_id, jurisdiction, effective_from) stops two rules
+      // STARTING together, which is not the failure that happens: two rules
+      // with different starts and open ends are both in force forever after
+      // the later one begins, and "the rule in force on D" gets two answers.
+      const sql = sqlFor("220_nexus_rules");
+      expect(sql).toContain("nexus_rules_no_overlap_excl");
+      expect(sql).toMatch(/EXCLUDE USING gist/);
+      expect(sql).toMatch(/daterange\(effective_from, effective_to, '\[\)'\) WITH &&/);
+      expect(sql).toContain("CREATE EXTENSION IF NOT EXISTS btree_gist");
+    });
+  });
+
+  describe("NX1.5 — the retention policy is implementable", () => {
+    it("lets the payload be purged without destroying the dedupe receipt", () => {
+      // NOT NULL here would have forced a choice between honouring retention
+      // and honouring idempotency: purging would mean deleting the row, and
+      // the row is the (provider, provider_delivery_id) receipt.
+      const sql = sqlFor("210_nexus_ingestion");
+      expect(sql).toMatch(/^\s*payload\s+JSONB,\s*$/m);
+      expect(sql).toContain("nexus_inbound_deliveries_purge_ck");
+      expect(sql).toMatch(/\(purged_at IS NULL\) = \(payload IS NOT NULL\)/);
+    });
+
+    it("only allows a purge once the delivery is terminal", () => {
+      expect(sqlFor("210_nexus_ingestion")).toContain(
+        "nexus_inbound_deliveries_purge_terminal_ck",
+      );
+    });
+  });
+
   describe("tenancy", () => {
     // Every table in the context, and whether it is tenant-scoped. The three
     // exemptions are each deliberate and each has its reason in the SQL.

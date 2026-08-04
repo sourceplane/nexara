@@ -101,6 +101,11 @@ CREATE INDEX IF NOT EXISTS nexus_determinations_current_idx
 CREATE INDEX IF NOT EXISTS nexus_determinations_org_evaluated_idx
   ON nexus.determinations (org_id, evaluated_at DESC, id DESC);
 
+-- NX1.5 finding S-6. Composite unique target for the tenant-scoped FK from
+-- nexus.alerts, so an alert cannot cite another tenant's determination.
+CREATE UNIQUE INDEX IF NOT EXISTS nexus_determinations_org_id_id_idx
+  ON nexus.determinations (org_id, id);
+
 -- Design §12: "determination produced from verified = false" must be a
 -- countable signal. If it is ever non-zero in prod the gate has a hole, and
 -- nothing else in the system will say so.

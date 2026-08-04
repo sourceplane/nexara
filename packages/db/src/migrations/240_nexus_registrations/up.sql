@@ -54,7 +54,15 @@ CREATE TABLE IF NOT EXISTS nexus.alerts (
   sent_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
   -- The notifications-worker's handle for the enqueued message, so a support
   -- question about a missing email is answerable without guessing.
-  notification_ref TEXT
+  notification_ref TEXT,
+
+  -- NX1.5 finding S-6. Tenant-scoped: an alert cites a determination, and an
+  -- alert citing another tenant's determination would send one seller's
+  -- numbers to another seller's inbox. The uniqueness index this references
+  -- lives in 230.
+  CONSTRAINT nexus_alerts_determination_fk
+    FOREIGN KEY (org_id, determination_id)
+    REFERENCES nexus.determinations (org_id, id)
 );
 
 COMMENT ON TABLE nexus.alerts IS
