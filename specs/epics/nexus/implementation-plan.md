@@ -1,9 +1,13 @@
 # nexus — Implementation Plan (NX0–NX9)
 
-Recommended order is the numbering, with two deliberate properties:
+Recommended order is the numbering, with three deliberate properties:
 
 - **NX2 (the engine) lands before any I/O exists.** It is pure, it is the
   product's only real IP, and it is the artefact a reviewer reads first.
+- **NX1.5 (the schema and isolation review) is a gate, not a phase.** It sits
+  between the migrations landing and anything being built on them, because that
+  is the last moment a finding is a schema edit rather than a migration plus a
+  backfill.
 - **The connectors (NX6, NX7) are last of the backend work on purpose.** They
   are the largest and the least defensible to rush. If the calendar slips, they
   slip; the engine and its tests do not.
@@ -11,9 +15,15 @@ Recommended order is the numbering, with two deliberate properties:
 NX1–NX4 plus the exposure board from NX8 constitute the **demo cut** (see the
 epic README § Delivery cut lines).
 
+**Readiness.** NX0 through NX5 are unblocked and implementable as written.
+NX6 opens on Q4, Q5, and Q6 (see `risks-and-open-questions.md`) — a channel
+staleness baseline, the Hyperdrive isolation spike, and the retention decision
+for raw delivery payloads. None of the three blocks anything before it, which
+is why the connectors sit where they sit.
+
 ---
 
-## NX0 — Product identity — Draft
+## NX0 — Product identity — Ready
 
 The repo still describes itself as a reusable SaaS starter, in `README.md`, in
 `intent.yaml`'s `metadata.description`, and in the catalog front page that Orun
@@ -58,6 +68,32 @@ manifest checksums match; a `viewer` resolves exactly the four read actions and
 a `builder` resolves seven; `pnpm typecheck` clean across
 `contracts`/`policy-engine`/`db`.
 
+## NX1.5 — Schema and isolation review — Ready
+
+An interposed gate, not a milestone with a feature in it. The migrations of NX1
+have landed and hold no rows; NX3 is about to make the schema load-bearing.
+This is the last point at which a finding costs a schema edit instead of a
+migration, a backfill, and a rewritten determination history.
+
+- **Artefact.** `specs/epics/nexus/schema-review.md` — written findings, each
+  with a severity and a disposition (`fixed` / `accepted, because …`). A review
+  that concludes "looks good" with no findings is not a review; it is a
+  signature.
+- **Scope.** The five migrations and their constraints; the tenancy argument of
+  design §7.3 read adversarially — *assume* the repository has a bug and ask
+  what the blast radius is; the dedupe index as the sole idempotency guarantee
+  (§6.4) — what write path could reach the ledger without passing it; the
+  `rule_sets`/`rules` un-scoped exemption; and the PII surface of
+  `inbound_deliveries` against Q6.
+- **Explicitly adversarial framing.** The reviewer's job is to produce findings
+  against a design the same repo authored. Treat "the design doc already
+  addresses this" as a claim to test, not an answer.
+
+Acceptance: `schema-review.md` exists with at least one finding carrying a
+disposition; every finding is closed or accepted in writing; NX3 does not open
+until it is. Findings that change the schema are folded into the NX1 migrations
+while they are still unapplied in prod, not appended as a `250_` fixup.
+
 ## NX2 — Determination engine — Ready
 
 The pure core. No database, no `Env`, no `fetch`, no `Date.now()` — `asOf` is
@@ -69,8 +105,9 @@ always a parameter.
   case per boundary in design §5.3** — half-open rolling windows, the
   previous-calendar-year discontinuity, a mid-window rule change, the UTC vs
   jurisdiction-date year boundary, a refund landing in a later period than its
-  sale, `threshold_logic='both'` with only sales crossing, and marketplace
-  treatment flipping the outcome.
+  sale, `threshold_logic='both'` with only sales crossing, marketplace
+  treatment flipping the outcome, and `threshold_logic='none'` returning a
+  terminal no-obligation on a ledger with real sales in it.
 - **Reproducibility.** `reproducibility.test.ts` re-runs the pinned
   `ENGINE_VERSION` against a stored `inputs` payload and its rule, asserting
   `status`, `crossed_on`, and `registration_due_on` return byte-identical.
@@ -107,6 +144,10 @@ The read product, end to end, over a ledger that can be seeded.
   `list-exposure`, `get-jurisdiction`, `evaluate`, `import-ledger`,
   `list-ledger`, `health`. Bindings `PLATFORM_DB`, `MEMBERSHIP_WORKER`,
   `POLICY_WORKER`.
+- **Observability.** The shipped `src/http.ts` structured timing line, and
+  `observability: { enabled: true }` in the wrangler template (design §12).
+  Wired here rather than at NX9 because logging retrofitted after the
+  connectors exist is logging designed around what already broke.
 - **Edge.** `apps/api-edge/src/nexus-facade.ts` registered in the dispatch chain
   **before** `isOrgRoute`; `NEXUS_WORKER` in `env.ts` and the wrangler template
   (stage + prod); a `nexus` `RouteFamily` and rate-limit entry; `"nexus"` as the
@@ -142,7 +183,7 @@ row, one email, and one audit entry — and re-running the cron immediately
 produces none of them; an unverified rule set produces an internal-only
 determination and **no** customer-facing alert (design §11).
 
-## NX6 — channels-worker and Stripe — Ready
+## NX6 — channels-worker and Stripe — Ready, gated on Q4–Q6
 
 - **Worker.** `apps/channels-worker` mirroring the shipped integrations anatomy:
   `state.ts` (signed single-use connect state), `encryption.ts` (credential
@@ -189,6 +230,16 @@ same ledger, changing only the rule.
   progress), `registrations` (status and deadlines).
 - **Components** in `src/components/nexus/`: `exposure-card`,
   `threshold-meter`, `determination-explainer`, `channel-connect-card`.
+- **Support view.** A staff-only surface behind the existing `admin-worker`
+  gate, reusing the platform's admin route group rather than adding a second
+  privileged path: look up a tenant, read its channel and backfill state, read
+  its determination history with the same explainer the merchant sees, and read
+  the drain's failed deliveries for that tenant. **Read-only, without
+  exception** — no re-evaluation, no ledger edit, no determination override.
+  Support answering "why does my board say this" needs to see exactly what the
+  merchant saw; a support tool that can *change* a determination turns the
+  audit record into an opinion, which is the one thing this product sells
+  against.
 - **Storefront.** A public `src/app/nexara/` route group — marketing and
   self-serve signup.
 - **Wiring.** `qk.exposure` / `qk.jurisdiction` / `qk.channels` query keys,
@@ -202,8 +253,11 @@ proof of invariant 3 and the single screen worth showing anyone.
 Acceptance: an authenticated user completes connect → backfill → exposure →
 jurisdiction detail → registration entirely in the console; the explainer's
 numbers reconcile exactly with the stored determination; an unverified rule set
-renders the §11 banner instead of a status. Verified live with an authenticated
-browser walkthrough and screenshots.
+renders the §11 banner instead of a status; a `threshold_logic = 'none'`
+jurisdiction renders as out of scope *citing its rule row*, never as `clear`
+and never as blank; the support view renders a foreign tenant's determination
+history and exposes no mutation, asserted by a test rather than by inspection.
+Verified live with an authenticated browser walkthrough and screenshots.
 
 ## NX9 — Commercial and evidence — Ready
 
@@ -221,9 +275,13 @@ browser walkthrough and screenshots.
   `intent.yaml` with the `nexus` and `channels` domains and systems; per-
   component `overview.md` + `runbook.md`.
 - **Verification.** Stage walkthrough via CLI, then prod smoke after promotion;
-  deployment manifest regenerated from verified live state.
+  deployment manifest regenerated from verified live state; each design §12
+  signal shown resolving against real stage traffic, because an alert nobody
+  has ever seen fire is not instrumentation.
 
 Acceptance: a new tenant on the Starter plan is blocked at the 11th jurisdiction
 with an upgrade prompt, not a 500; the demo tenant's board tells the whole story
 without a narrator; the workspace Docs hub renders the product's own docs; the
-live deployment manifest carries no `TBD` placeholders.
+live deployment manifest carries no `TBD` placeholders; the unverified-rule-set
+counter of §12 reads non-zero on stage (the demo tenant runs unverified by
+design) and the log sink contains no provider payload.

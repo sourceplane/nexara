@@ -13,12 +13,12 @@ penalties later. Nexara watches the line and says so on the day it is crossed.
 
 | Field | Value |
 |-------|-------|
-| Status | **Draft** — charter only; no code has landed |
-| Cluster | **NX** (NX0–NX9) — the first *product* bounded context on this starter |
+| Status | **Ready** — agreed and implementable; no code has landed. NX0–NX5 are unblocked; NX6 opens on Q4–Q6 |
+| Cluster | **NX** (NX0–NX9, plus the NX1.5 review gate) — the first *product* bounded context on this starter |
 | Owner(s) | new `apps/nexus-worker`, new `apps/channels-worker`, `apps/api-edge`, `packages/{contracts,policy-engine,db,sdk,cli}`, `apps/web-console-next` |
 | Target branch | `main` |
 | Builds on | the shipped platform: identity/membership, policy engine, `@saas/db` + Hyperdrive, metering/billing, notifications, events, webhooks, SDK/CLI, console foundation |
-| Decisions locked | Two new bounded contexts (`nexus`, `channels`); org = the seller/tenant; money is integer cents everywhere including the engine; `nexus.sale_events` is append-only and never `UPDATE`d — a refund is a new negative row referencing the original; rules are **versioned reference data, not code**, and are global (no `org_id`); every determination stores `rule_set_version` + `rule_id` + `engine_version` + its exact `inputs` so it is reproducible years later; the evaluation engine is pure and I/O-free; tenant isolation is query-level scoping enforced by a single repository surface **plus a CI scan**, not Postgres RLS (Hyperdrive pools connections); the only unauthenticated ingress is signature-verified provider webhooks; **no customer-facing determination is produced from an unverified rule set** |
+| Decisions locked | Two new bounded contexts (`nexus`, `channels`); org = the seller/tenant; money is integer cents everywhere including the engine; `nexus.sale_events` is append-only and never `UPDATE`d — a refund is a new negative row referencing the original; rules are **versioned reference data, not code**, and are global (no `org_id`); every determination stores `rule_set_version` + `rule_id` + `engine_version` + its exact `inputs` so it is reproducible years later; the evaluation engine is pure and I/O-free; tenant isolation is query-level scoping enforced by a single repository surface **plus a CI scan**, not Postgres RLS (Hyperdrive pools connections); the only unauthenticated ingress is signature-verified provider webhooks; **no customer-facing determination is produced from an unverified rule set**; a jurisdiction that enforces no threshold gets an explicit rule row (`threshold_logic = 'none'`) rather than an absent one, so "no obligation" and "no data" can never render alike; the schema is reviewed adversarially *before* anything is built on it (NX1.5); the support surface is read-only without exception — no determination override exists anywhere in the product; raw provider payloads never reach a log sink |
 
 ## Thesis
 
@@ -56,19 +56,23 @@ measured, and the code version that decided — re-run it yourself."*
    make this wrong, and what is still undecided.
 5. [`IMPLEMENTATION-STATUS.md`](./IMPLEMENTATION-STATUS.md) — as-built record.
 
+`schema-review.md` joins this set at NX1.5 and does not exist yet; it is the
+review gate's only artefact, and NX3 does not open without it.
+
 ## Milestones at a glance
 
 | ID | Milestone | Status |
 |----|-----------|--------|
-| NX0 | Product identity: repo + catalog framing from "starter" to Nexara; this epic doc set | Draft |
+| NX0 | Product identity: repo + catalog framing from "starter" to Nexara; this epic doc set | Ready |
 | NX1 | Contracts + schema: `@saas/contracts/{nexus,channels}`, migrations `200`–`240`, RBAC actions | Ready |
+| NX1.5 | **Gate** — adversarial schema + tenant-isolation review, written findings, before anything is built on the schema | Ready |
 | NX2 | Determination engine: pure `engine/{periods,measure,threshold,deadline}`, exhaustively unit-tested without a database | Ready |
 | NX3 | Aggregation + ledger: `@saas/db/nexus` repository, the single-scan jurisdiction aggregate, dedupe-constrained append | Ready |
 | NX4 | `nexus-worker` + edge + SDK + CLI: exposure, jurisdiction detail, evaluate, ledger import | Ready |
 | NX5 | Evaluation cron, immutable determinations, threshold alerts (notifications + events + outgoing webhook type) | Ready |
-| NX6 | `channels-worker`: provider seam, inbound inbox + drain, Stripe adapter, backfill/live-sync sequencing | Ready |
+| NX6 | `channels-worker`: provider seam, inbound inbox + drain, Stripe adapter, backfill/live-sync sequencing | Ready — gated on Q4–Q6 |
 | NX7 | Shopify adapter: ship-to jurisdiction resolution + marketplace-facilitator identification | Ready |
-| NX8 | Console: exposure board, jurisdiction detail + determination explainer, ledger, channels, registrations, storefront | Ready |
+| NX8 | Console: exposure board, jurisdiction detail + determination explainer, ledger, channels, registrations, read-only support view, storefront | Ready |
 | NX9 | Commercial + evidence: metered plans and entitlements, seeded demo tenant, docs/catalog, stage + prod verification | Ready |
 
 ## Delivery cut lines
@@ -86,6 +90,17 @@ attached and the second does not:
 
 The cut line runs *after* NX2 and NX3, never through them. If the calendar
 slips, connectors slip; the engine and its tests do not.
+
+**The calendar.** The commercial deadline is **15 September 2026**. Against a
+4 August start that is roughly six working weeks for twelve working days of
+plan, so the schedule is not the binding constraint — the open questions and
+the connectors are. Read that margin as the room to lose Q4–Q6 and the NX1.5
+findings without moving the date, not as room to widen scope. If the date is
+ever at risk, the order of sacrifice is fixed and stated here in advance: NX7
+(Shopify) first, then NX9's commercial surface, then NX6 down to Stripe
+backfill without live sync. NX1.5, NX2, and NX3 are never cut — a compliance
+product that ships on time with an unreviewed schema and an untested engine has
+shipped its liability, not its product.
 
 ## Scope boundary
 

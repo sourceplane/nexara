@@ -93,12 +93,30 @@ than tracking the account default.
 |---|---|---|---|
 | Q1 | Who publishes and verifies rule sets, at what cadence, from which primary sources? | any `verified = true` environment | product |
 | Q2 | Is the tenant a seller, or an accounting firm holding many sellers? The org/sub-org shape differs, and the Firm plan (design §9) presumes the latter. | NX9 plan modelling | product |
-| Q3 | Do digital-goods sourcing rules belong in v1? | R4, rule schema | product |
+| Q3 | Do digital-goods sourcing rules belong in v1? Sharpened by the international rows, which exist precisely for non-resident *digital services* sellers — a seller with no shipping address anywhere. | R4 — **not** NX1; see below | product |
 | Q4 | What is the volume-aware staleness baseline for a channel? | R3, NX6 | engineering |
 | Q5 | Is any Postgres-side isolation reachable under Hyperdrive pooling? | R6 | engineering — spike before NX6 |
 | Q6 | Retention: how long is the raw `inbound_deliveries` payload kept? It contains customer PII and is only needed until the delivery is applied. | NX6 | product + engineering |
 
+**Q3 does not block NX1**, and this is worth stating because it looks like it
+should. Digital-goods sourcing would enter the schema as an additional column on
+`nexus.rules` and an additional branch in `engine/measure.ts` — additive against
+rules that are already versioned reference data, so adopting it later costs a
+new rule-set version rather than a migration against live determinations. NX1
+proceeds on the current shape. What v1 *does* commit to is recording the
+jurisdiction-resolution fallback level on every ledger row (R4), which is what
+makes the question answerable from real data instead of from argument when
+product picks it up.
+
+Q1's resolution has a shape even though its answer is open: rule-set
+verification is a claim about primary tax sources, so `verified = true` is set
+by a named human with tax-practice accountability, and never by an engineer
+reading a state website. Until that person exists, §11 holds and every
+environment runs unverified — which is a working state, not a blocked one.
+
 Q6 is the one with a regulatory edge — a raw Shopify order payload carries names
 and addresses. The current assumption is that payloads are purged on a schedule
 after `applied`, keeping only the canonical ledger row. That assumption is not
-yet a decision.
+yet a decision. Design §12 takes the adjacent decision now regardless: payloads
+never reach a log sink, because a retention policy on the inbox is worthless if
+the same bytes are also sitting in logs outside it.

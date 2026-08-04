@@ -176,9 +176,28 @@ DATE NOT NULL`, `effective_to DATE`, `measurement_basis
 CHECK IN ('gross','retail','taxable')`, `measurement_period
 CHECK IN ('rolling_12m','calendar_year','previous_calendar_year')`,
 `sales_threshold_cents BIGINT`, `transaction_threshold INTEGER`,
-`threshold_logic CHECK IN ('sales_only','transactions_only','either','both')`,
+`threshold_logic CHECK IN ('none','sales_only','transactions_only','either','both')`,
 `marketplace_treatment CHECK IN ('include','exclude')`,
 `registration_deadline_rule JSONB NOT NULL`, `notes`.
+
+**`threshold_logic = 'none'` is a position, not a gap.** Forty-eight
+jurisdictions enforce an economic-nexus threshold; the rest — New Hampshire,
+Oregon, Montana, Delaware, and Alaska at the state level — enforce none. Those
+states get an explicit rule row with `'none'` and both threshold columns null,
+so the engine returns a first-class "no obligation" rather than the caller
+having to interpret a missing row. Absent data and *deliberately* absent
+obligation must not render identically: the first is a bug in our rule set, the
+second is the answer. The engine treats `'none'` as terminal — it never
+computes a measurement, and the board shows the state as out of scope with the
+rule row as its justification.
+
+**International rows live in the same two tables.** A VAT/GST registration
+threshold for a non-resident digital-services seller is a rule like any other,
+keyed by an ISO country code in `jurisdiction` (`GB`, `DE`) rather than a
+`US-XX` code. They are carried as **display-only** in v1 per the epic's scope
+boundary: stored, versioned, and shown, but never evaluated into a
+determination or an alert. Nothing in the schema distinguishes them; the
+evaluator's jurisdiction filter does, in one place.
 
 **Note the deliberate omission: neither table has an `org_id`.** They are shared
 global reference data. This is stated here so that a reviewer who notices a
@@ -317,6 +336,9 @@ test in NX2, written *before* the handlers exist:
    crossed.
 7. `marketplace_treatment = 'exclude'` flipping the outcome versus `'include'`
    on the same ledger.
+8. `threshold_logic = 'none'` (§3.3) on a ledger with substantial sales into
+   that jurisdiction: the result is a terminal "no obligation", **not** `clear`
+   at 0% and not a division by a null threshold.
 
 ## 6. Ingestion
 
@@ -452,10 +474,21 @@ bug; query scoping has none, so it must be enforced structurally instead:
 - `requireOrgAction(...)` runs before every repository call;
 - **a CI test scans repository sources and fails any `nexus.` or `channels.`
   query that lacks `org_id = $`**, with `nexus.rule_sets` and `nexus.rules`
-  exempt by explicit name (§3.3).
+  exempt by explicit name (§3.3);
+- **an adversarial review of the schema and the isolation argument, written
+  down before the ingestion pipeline is built on top of it** (NX1.5).
 
-That third item is ~20 lines and it is what turns the claim into a control. It
+The third item is ~20 lines and it is what turns the claim into a control. It
 lands in NX3, with the repository, not later.
+
+The fourth exists because every control above is a claim made by the same
+person who wrote the thing it constrains. A schema is cheap to change while it
+holds no rows and expensive once two connectors and a determination history sit
+on it, so the review is deliberately sequenced *between* the migrations landing
+and the aggregation being written — the last moment where acting on a finding
+is still a schema edit rather than a migration plus a backfill. Its output is a
+document with findings, not an approval; NX3 does not open until each finding is
+closed or explicitly accepted in writing.
 
 ## 8. Alerting, audit, and webhooks
 
@@ -537,3 +570,38 @@ Until a rule set is human-verified against primary sources, the demo tenant and
 any pre-launch environment run on a synthetic set with `verified = false` and
 `source_note` explaining exactly that. This costs nothing and it is the
 difference between a product that is careful and a product that says it is.
+
+## 12. Observability
+
+Both new workers carry the shipped convention unchanged: the single structured
+timing line emitted from `src/http.ts`, with the request id, route, status, and
+duration. Nothing bespoke.
+
+Two additions, because the platform's wrangler templates currently enable
+neither and a compliance product cannot be operated blind:
+
+- **`observability: { enabled: true }` in both wrangler templates**, so Workers
+  Logs retains invocation logs rather than discarding them after tail
+  disconnects. This is the first worker pair in the repo to set it; if it proves
+  out here it should be lifted to the rest of the fleet as its own change, not
+  smuggled in through this epic.
+- **A named signal per failure mode that is otherwise silent.** Ordinary 5xx
+  rates do not cover this product's actual risks, all of which fail quietly:
+
+| Signal | Why it is not covered by error rates |
+|---|---|
+| determination produced from `verified = false` | §11 says these are internal-only. If the count is not zero in prod, the gate has a hole and nothing else will say so |
+| delivery reaching terminal `failed` in the drain | a permanently dropped sale is a wrong board, and the drain's own retries make it a success path until attempt five |
+| channel `degraded` / stale beyond its cadence | R3 — absence of data reads exactly like absence of sales |
+| `backfill_completed_at` never set | a channel stuck mid-backfill serves a partial ledger that looks complete |
+| `ENGINE_VERSION` at evaluation time | when a determination is disputed years later, the log is the corroborating record for the row's own claim |
+
+**One prohibition.** Raw provider payloads are never written to a log line.
+They carry customer names and addresses (Q6), the inbox already holds them
+under a retention policy, and a log sink is precisely where that policy stops
+applying. Log the delivery id and the channel id; the payload stays in
+`nexus.inbound_deliveries`.
+
+Error reporting rides Workers Logs and a tail consumer rather than an in-worker
+SDK. If an external sink is wanted later, it attaches at the tail consumer and
+changes no handler code.

@@ -12,7 +12,7 @@ glance), `design.md`, `implementation-plan.md` (milestones with "done when"),
 
 | Epic | Cluster | Status | Owner(s) | What it is |
 |------|---------|--------|----------|------------|
-| [`nexus/`](./nexus/) | **NX** | Draft (charter only — no code) | new `nexus-worker` + `channels-worker`, `api-edge` facade, `packages/{contracts,policy-engine,db,sdk,cli}`, `web-console-next` | The product: economic-nexus threshold monitoring for ecommerce sellers. An append-only sale-event ledger fed by connected sales channels, aggregated per jurisdiction, evaluated against versioned rule data by a pure engine, and recorded as immutable, reproducible determinations that alert a merchant before a state finds them. |
+| [`nexus/`](./nexus/) | **NX** | Ready (agreed — no code yet; NX0–NX5 unblocked, NX6 gated on Q4–Q6) | new `nexus-worker` + `channels-worker`, `api-edge` facade, `packages/{contracts,policy-engine,db,sdk,cli}`, `web-console-next` | The product: economic-nexus threshold monitoring for ecommerce sellers. An append-only sale-event ledger fed by connected sales channels, aggregated per jurisdiction, evaluated against versioned rule data by a pure engine, and recorded as immutable, reproducible determinations that alert a merchant before a state finds them. |
 
 ## Lifecycle
 
