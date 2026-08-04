@@ -1,5 +1,5 @@
 // `nexara webhook sign` — local cryptographic signing of a
-// nexara outbound webhook payload (Task 0107).
+// Nexara outbound webhook payload (Task 0107).
 //
 // Symmetric counterpart to `webhook verify` (Task 0106). Wraps
 // `@saas/webhook-verifier`'s `signWebhookPayload` exactly; all crypto

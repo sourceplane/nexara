@@ -1,6 +1,6 @@
 # `@saas/cli`
 
-`nexara` — first-class TypeScript CLI for the nexara control
+`nexara` — first-class TypeScript CLI for the Nexara control
 plane. Wraps `@saas/sdk` (the only transport allowed) and surfaces a
 small set of read-only commands today; write commands land in Task 0101.
 

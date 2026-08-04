@@ -13,7 +13,7 @@
 //   When the CLI later gains a device-flow endpoint, switching is a
 //   one-line dispatch in this file.
 
-import { nexara } from "@saas/sdk";
+import { Nexara } from "@saas/sdk";
 
 import type { OutputMode } from "../output/index.js";
 import { formatOutput } from "../output/index.js";
@@ -30,7 +30,7 @@ export interface LoginInput {
   readonly readToken: () => Promise<string>;
   readonly stdout: (line: string) => void;
   /** SDK factory override (tests). */
-  readonly sdkFactory?: (baseUrl: string, token: string) => nexara;
+  readonly sdkFactory?: (baseUrl: string, token: string) => Nexara;
 }
 
 export interface LoginOutcome {
@@ -61,7 +61,7 @@ export async function loginFlow(input: LoginInput): Promise<LoginOutcome> {
   // friendly "token rejected" message.
   const client =
     input.sdkFactory?.(apiUrl, token) ??
-    new nexara({ baseUrl: apiUrl, auth: { kind: "bearer", token } });
+    new Nexara({ baseUrl: apiUrl, auth: { kind: "bearer", token } });
   const result = await client.organizations.list();
   const orgCount = result.organizations.length;
 

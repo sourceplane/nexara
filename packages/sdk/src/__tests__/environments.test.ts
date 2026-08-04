@@ -5,11 +5,11 @@
 //   - encodeURIComponent on dynamic segments (org / project / environment id)
 //   - Stripe parity: idempotency-key passthrough on create + archive
 //   - Stripe parity NOT auto-generated when caller omits the key
-//   - nexaraError hierarchy propagation with request-id passthrough
+//   - NexaraError hierarchy propagation with request-id passthrough
 
 import { describe, expect, it, vi } from "vitest";
 
-import { nexara } from "../index.js";
+import { Nexara } from "../index.js";
 import { ConflictError, NotFoundError, ValidationError } from "../errors.js";
 
 interface CapturedCall {
@@ -56,8 +56,8 @@ function errorResponse(code: string, status: number): Response {
   );
 }
 
-function client(fetchImpl: typeof fetch): nexara {
-  return new nexara({ baseUrl: "https://api.test", fetch: fetchImpl });
+function client(fetchImpl: typeof fetch): Nexara {
+  return new Nexara({ baseUrl: "https://api.test", fetch: fetchImpl });
 }
 
 describe("EnvironmentsClient", () => {

@@ -1,5 +1,5 @@
 // `nexara webhook verify` — local cryptographic verification of a
-// nexara outbound webhook delivery (Task 0106).
+// Nexara outbound webhook delivery (Task 0106).
 //
 // This command is a thin shell around `@saas/webhook-verifier` (Task 0105).
 // It deliberately:

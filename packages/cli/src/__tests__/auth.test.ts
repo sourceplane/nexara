@@ -4,7 +4,7 @@ import * as path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { nexara } from "@saas/sdk";
+import { Nexara } from "@saas/sdk";
 
 import { loginFlow } from "../auth/login.js";
 import { logoutFlow } from "../auth/logout.js";
@@ -43,7 +43,7 @@ describe("login (token-paste)", () => {
       readToken: async () => "should-not-be-called",
       stdout: (line) => stdout.push(line),
       sdkFactory: (baseUrl, token) =>
-        new nexara({ baseUrl, auth: { kind: "bearer", token }, fetch }),
+        new Nexara({ baseUrl, auth: { kind: "bearer", token }, fetch }),
     });
 
     const cred = await tokenStore.load();
@@ -114,7 +114,7 @@ describe("login (token-paste)", () => {
         readToken: async () => "tok_bad",
         stdout: () => undefined,
         sdkFactory: (baseUrl, token) =>
-          new nexara({ baseUrl, auth: { kind: "bearer", token }, fetch }),
+          new Nexara({ baseUrl, auth: { kind: "bearer", token }, fetch }),
       }),
     ).rejects.toMatchObject({ name: "UnauthenticatedError" });
     // Token should NOT have been persisted on auth failure.
@@ -160,7 +160,7 @@ describe("whoami", () => {
       contextStore: ctx,
       stdout: (line) => stdout.push(line),
       sdkFactory: (baseUrl, token) =>
-        new nexara({ baseUrl, auth: { kind: "bearer", token }, fetch }),
+        new Nexara({ baseUrl, auth: { kind: "bearer", token }, fetch }),
     });
     expect(JSON.parse(stdout[0] ?? "")).toEqual({
       apiUrl: "https://api.test",

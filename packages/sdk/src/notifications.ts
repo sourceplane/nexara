@@ -21,7 +21,7 @@ import type { RequestOptions, Transport } from "./transport.js";
  * `x-actor-subject-id`, and `x-actor-subject-type` headers on every request.
  *
  * This SDK exposes the typed shape so internal callers (other workers, the
- * nexara backplane gateway, the CLI's privileged internal mode) can hit
+ * Nexara backplane gateway, the CLI's privileged internal mode) can hit
  * the worker over a service binding with the correct headers passed via
  * `opts.headers`. External consumers MUST NOT receive this client wired to a
  * public base URL.

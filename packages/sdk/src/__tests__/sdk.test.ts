@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { nexara } from "../index.js";
+import { Nexara } from "../index.js";
 import {
   BadRequestError,
   ConflictError,
@@ -9,7 +9,7 @@ import {
   NotFoundError,
   PreconditionFailedError,
   RateLimitError,
-  nexaraError,
+  NexaraError,
   UnauthenticatedError,
   UnsupportedError,
   ValidationError,
@@ -51,7 +51,7 @@ const SUCCESS_LIST = {
 describe("Transport — success path", () => {
   it("unwraps the data envelope on GET", async () => {
     const { fetch, calls } = captureFetch(jsonResponse(SUCCESS_LIST));
-    const client = new nexara({ baseUrl: "https://api.test", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test", fetch });
 
     const result = await client.organizations.list();
 
@@ -63,7 +63,7 @@ describe("Transport — success path", () => {
 
   it("strips trailing slash from baseUrl", async () => {
     const { fetch, calls } = captureFetch(jsonResponse(SUCCESS_LIST));
-    const client = new nexara({ baseUrl: "https://api.test/", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test/", fetch });
     await client.organizations.list();
     expect(calls[0]!.url).toBe("https://api.test/v1/organizations");
   });
@@ -79,7 +79,7 @@ describe("Transport — success path", () => {
     const { fetch, calls } = captureFetch(
       jsonResponse({ data: { project: {} }, meta: { requestId: "req_x", cursor: null } }),
     );
-    const client = new nexara({ baseUrl: "https://api.test", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test", fetch });
     await client.projects.get("org/with slash", "proj");
     expect(calls[0]!.url).toContain("org%2Fwith%20slash");
   });
@@ -88,7 +88,7 @@ describe("Transport — success path", () => {
 describe("Transport — auth", () => {
   it("attaches bearer token", async () => {
     const { fetch, calls } = captureFetch(jsonResponse(SUCCESS_LIST));
-    const client = new nexara({
+    const client = new Nexara({
       baseUrl: "https://api.test",
       auth: { kind: "bearer", token: "test-token" },
       fetch,
@@ -100,7 +100,7 @@ describe("Transport — auth", () => {
 
   it("attaches session cookie", async () => {
     const { fetch, calls } = captureFetch(jsonResponse(SUCCESS_LIST));
-    const client = new nexara({
+    const client = new Nexara({
       baseUrl: "https://api.test",
       auth: { kind: "session", cookie: "sb_session=abc" },
       fetch,
@@ -114,7 +114,7 @@ describe("Transport — auth", () => {
 describe("Transport — request id", () => {
   it("auto-generates a req_-prefixed id when caller omits", async () => {
     const { fetch, calls } = captureFetch(jsonResponse(SUCCESS_LIST));
-    const client = new nexara({ baseUrl: "https://api.test", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test", fetch });
     await client.organizations.list();
     const headers = new Headers(calls[0]!.init.headers as HeadersInit);
     const sent = headers.get("x-request-id");
@@ -123,7 +123,7 @@ describe("Transport — request id", () => {
 
   it("passes caller-provided request id verbatim", async () => {
     const { fetch, calls } = captureFetch(jsonResponse(SUCCESS_LIST));
-    const client = new nexara({ baseUrl: "https://api.test", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test", fetch });
     await client.organizations.list({ requestId: "req_user_supplied_42" });
     const headers = new Headers(calls[0]!.init.headers as HeadersInit);
     expect(headers.get("x-request-id")).toBe("req_user_supplied_42");
@@ -144,7 +144,7 @@ describe("Transport — idempotency key", () => {
         { status: 201 },
       ),
     );
-    const client = new nexara({ baseUrl: "https://api.test", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test", fetch });
     await client.organizations.create({ name: "Acme" });
     const headers = new Headers(calls[0]!.init.headers as HeadersInit);
     expect(headers.get("idempotency-key")).toBeNull();
@@ -157,7 +157,7 @@ describe("Transport — idempotency key", () => {
         { status: 201 },
       ),
     );
-    const client = new nexara({ baseUrl: "https://api.test", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test", fetch });
     await client.organizations.create(
       { name: "Acme" },
       { idempotencyKey: "ikey_abc123" },
@@ -175,7 +175,7 @@ describe("Transport — idempotency key", () => {
         { status: 201 },
       ),
     );
-    const client = new nexara({ baseUrl: "https://api.test", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test", fetch });
     await client.projects.create("org_1", { name: "Web" }, { idempotencyKey: "ikey_proj_1" });
     const headers = new Headers(calls[0]!.init.headers as HeadersInit);
     expect(headers.get("idempotency-key")).toBe("ikey_proj_1");
@@ -186,7 +186,7 @@ describe("Transport — idempotency key", () => {
 describe("Transport — abort signal", () => {
   it("forwards the abort signal", async () => {
     const { fetch, calls } = captureFetch(jsonResponse(SUCCESS_LIST));
-    const client = new nexara({ baseUrl: "https://api.test", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test", fetch });
     const ctrl = new AbortController();
     await client.organizations.list({ signal: ctrl.signal });
     expect(calls[0]!.init.signal).toBe(ctrl.signal);
@@ -208,7 +208,7 @@ describe("Error decoding — typed branches", () => {
     );
   }
 
-  const cases: Array<[string, number, new (...args: never[]) => nexaraError]> = [
+  const cases: Array<[string, number, new (...args: never[]) => NexaraError]> = [
     ["bad_request", 400, BadRequestError],
     ["unauthenticated", 401, UnauthenticatedError],
     ["forbidden", 403, ForbiddenError],
@@ -222,17 +222,17 @@ describe("Error decoding — typed branches", () => {
   for (const [code, status, Ctor] of cases) {
     it(`decodes ${code} → ${Ctor.name}`, async () => {
       const { fetch } = captureFetch(envelopeFor(code, status));
-      const client = new nexara({ baseUrl: "https://api.test", fetch });
+      const client = new Nexara({ baseUrl: "https://api.test", fetch });
       await expect(client.organizations.list()).rejects.toBeInstanceOf(Ctor);
       try {
         await client.organizations.list();
       } catch (err) {
-        const e = err as nexaraError;
+        const e = err as NexaraError;
         expect(e.code).toBe(code);
         expect(e.status).toBe(status);
         expect(e.requestId).toBe("req_server_err");
         expect(e.message).toBe(`synthetic ${code}`);
-        expect(e).toBeInstanceOf(nexaraError);
+        expect(e).toBeInstanceOf(NexaraError);
       }
     });
   }
@@ -251,7 +251,7 @@ describe("Error decoding — typed branches", () => {
         { status: 422 },
       ),
     );
-    const client = new nexara({ baseUrl: "https://api.test", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test", fetch });
     try {
       await client.organizations.create({ name: "" });
       throw new Error("expected throw");
@@ -262,16 +262,16 @@ describe("Error decoding — typed branches", () => {
     }
   });
 
-  it("forward-compat: unknown error code → base nexaraError", async () => {
+  it("forward-compat: unknown error code → base NexaraError", async () => {
     const { fetch } = captureFetch(envelopeFor("future_quota_exceeded", 402));
-    const client = new nexara({ baseUrl: "https://api.test", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test", fetch });
     try {
       await client.organizations.list();
       throw new Error("expected throw");
     } catch (err) {
-      expect(err).toBeInstanceOf(nexaraError);
+      expect(err).toBeInstanceOf(NexaraError);
       expect(err).not.toBeInstanceOf(BadRequestError);
-      expect((err as nexaraError).code).toBe("future_quota_exceeded");
+      expect((err as NexaraError).code).toBe("future_quota_exceeded");
     }
   });
 
@@ -282,7 +282,7 @@ describe("Error decoding — typed branches", () => {
         headers: { "content-type": "text/html" },
       }),
     );
-    const client = new nexara({ baseUrl: "https://api.test", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test", fetch });
     try {
       await client.organizations.list();
       throw new Error("expected throw");
@@ -298,7 +298,7 @@ describe("Error decoding — typed branches", () => {
 
   it("empty 500 body falls back to InternalError", async () => {
     const { fetch } = captureFetch(new Response("", { status: 500 }));
-    const client = new nexara({ baseUrl: "https://api.test", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test", fetch });
     await expect(client.organizations.list()).rejects.toBeInstanceOf(InternalError);
   });
 });
@@ -332,7 +332,7 @@ describe("Error decoding — RateLimitError", () => {
 
   it("decodes Task 0097 rate-limit envelope completely", async () => {
     const { fetch } = captureFetch(rateLimitedResponse());
-    const client = new nexara({ baseUrl: "https://api.test", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test", fetch });
 
     try {
       await client.organizations.list();
@@ -368,7 +368,7 @@ describe("Error decoding — RateLimitError", () => {
         { status: 429 },
       ),
     );
-    const client = new nexara({ baseUrl: "https://api.test", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test", fetch });
     try {
       await client.organizations.list();
       throw new Error("expected throw");
@@ -395,7 +395,7 @@ describe("Error decoding — RateLimitError", () => {
         { status: 429 },
       ),
     );
-    const client = new nexara({ baseUrl: "https://api.test", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test", fetch });
     try {
       await client.organizations.list();
       throw new Error("expected throw");
@@ -412,7 +412,7 @@ describe("Resource clients — surface", () => {
     const { fetch, calls } = captureFetch(
       jsonResponse({ data: { projects: [] }, meta: { requestId: "req", cursor: null } }),
     );
-    const client = new nexara({ baseUrl: "https://api.test", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test", fetch });
     await client.projects.list("org_1");
     expect(calls[0]!.url).toBe("https://api.test/v1/organizations/org_1/projects");
     expect(calls[0]!.init.method).toBe("GET");
@@ -422,7 +422,7 @@ describe("Resource clients — surface", () => {
     const { fetch, calls } = captureFetch(
       jsonResponse({ data: { project: {} }, meta: { requestId: "req", cursor: null } }),
     );
-    const client = new nexara({ baseUrl: "https://api.test", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test", fetch });
     await client.projects.archive("org_1", "proj_1");
     expect(calls[0]!.init.method).toBe("DELETE");
     expect(calls[0]!.url).toBe(
@@ -434,7 +434,7 @@ describe("Resource clients — surface", () => {
     const { fetch, calls } = captureFetch(
       jsonResponse({ data: { organization: {} }, meta: { requestId: "req", cursor: null } }),
     );
-    const client = new nexara({ baseUrl: "https://api.test", fetch });
+    const client = new Nexara({ baseUrl: "https://api.test", fetch });
     await client.organizations.get("org_42");
     expect(calls[0]!.url).toBe("https://api.test/v1/organizations/org_42");
   });

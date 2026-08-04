@@ -1,7 +1,7 @@
 // Tests for Task 0122 — `nexara security events` CLI subcommand.
 //
 // The harness injects a *fake SDK* via `sdkFactory` rather than going through
-// the real `nexara` client + a captured-fetch — the command is a thin
+// the real `Nexara` client + a captured-fetch — the command is a thin
 // adapter over `sdk.securityEvents.listPage`, so direct SDK-layer injection
 // lets us assert the call shape (query) and the cursor-following loop without
 // modelling the request envelope. The fake mirrors only the subset of the SDK
@@ -24,7 +24,7 @@ import * as path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import type {
-  nexara,
+  Nexara,
   PublicSecurityEvent,
   SecurityEventsPage,
 } from "@saas/sdk";
@@ -113,7 +113,7 @@ async function withHarness(
 
     const fakeSdk = {
       securityEvents: { listPage },
-    } as unknown as nexara;
+    } as unknown as Nexara;
 
     const runArgv = (argv: string[]): Promise<{ exitCode: number }> =>
       runCli(argv, {

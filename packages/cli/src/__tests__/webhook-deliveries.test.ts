@@ -1,7 +1,7 @@
 // Tests for Task 0120 — `nexara webhook deliveries` CLI subcommand.
 //
 // The harness injects a *fake SDK* via `sdkFactory` rather than going through
-// the real `nexara` client + a captured-fetch — the command is a thin
+// the real `Nexara` client + a captured-fetch — the command is a thin
 // adapter over `sdk.webhooks.listDeliveryAttemptsPage`, so direct SDK-layer
 // injection lets us assert the call shape (orgId, endpointId, query) and the
 // cursor-following loop without modelling the request envelope. The fake
@@ -20,7 +20,7 @@ import * as path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import type {
-  nexara,
+  Nexara,
   PublicWebhookDeliveryAttempt,
   DeliveryAttemptsPage,
 } from "@saas/sdk";
@@ -132,7 +132,7 @@ async function withHarness(
 
     const fakeSdk = {
       webhooks: { listDeliveryAttemptsPage },
-    } as unknown as nexara;
+    } as unknown as Nexara;
 
     const runArgv = (argv: string[]): Promise<{ exitCode: number }> =>
       runCli(argv, {

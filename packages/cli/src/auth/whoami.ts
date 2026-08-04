@@ -1,6 +1,6 @@
 // `nexara whoami` — read token + cached context, validate via SDK.
 
-import { nexara } from "@saas/sdk";
+import { Nexara } from "@saas/sdk";
 
 import type { OutputMode } from "../output/index.js";
 import { formatOutput } from "../output/index.js";
@@ -13,8 +13,8 @@ export interface WhoamiInput {
   readonly tokenStore: TokenStore;
   readonly contextStore: ContextStore;
   readonly stdout: (line: string) => void;
-  /** SDK factory override for tests. Defaults to constructing `nexara`. */
-  readonly sdkFactory?: (baseUrl: string, token: string) => nexara;
+  /** SDK factory override for tests. Defaults to constructing `Nexara`. */
+  readonly sdkFactory?: (baseUrl: string, token: string) => Nexara;
 }
 
 export interface WhoamiOutcome {
@@ -29,7 +29,7 @@ export async function whoamiFlow(input: WhoamiInput): Promise<WhoamiOutcome> {
 
   const client =
     input.sdkFactory?.(cred.apiUrl, cred.token) ??
-    new nexara({
+    new Nexara({
       baseUrl: cred.apiUrl,
       auth: { kind: "bearer", token: cred.token },
     });

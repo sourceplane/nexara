@@ -2,7 +2,7 @@ apiVersion: sourceplane.io/v1
 kind: Component
 metadata:
   name: cli
-  description: First-class TypeScript CLI for the nexara control plane API
+  description: First-class TypeScript CLI for the Nexara control plane API
 spec:
   docs:
     overview: docs/overview.md

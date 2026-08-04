@@ -1,9 +1,9 @@
-// Typed error hierarchy for the nexara SDK.
+// Typed error hierarchy for the Nexara SDK.
 //
 // The api-edge error envelope is:
 //   { error: { code: string, message: string, details: object, requestId?: string } }
 // where `code` is one of `ERROR_CODES` from `@saas/contracts/errors`. Unknown
-// codes (forward compatibility) fall back to the generic `nexaraError`
+// codes (forward compatibility) fall back to the generic `NexaraError`
 // base class with the raw envelope preserved.
 //
 // `RateLimitError` decodes the `Retry-After` and `X-RateLimit-{Limit,Remaining,
@@ -20,7 +20,7 @@ export interface ErrorEnvelope {
   requestId?: string;
 }
 
-export interface nexaraErrorInit {
+export interface NexaraErrorInit {
   envelope: ErrorEnvelope;
   status: number;
   requestId: string;
@@ -30,10 +30,10 @@ export interface nexaraErrorInit {
 
 /**
  * Base error type. Unknown error codes (forward-compat, e.g. a future
- * `quota_exceeded`) decode to this class — `instanceof nexaraError`
+ * `quota_exceeded`) decode to this class — `instanceof NexaraError`
  * still matches.
  */
-export class nexaraError extends Error {
+export class NexaraError extends Error {
   readonly code: string;
   readonly status: number;
   readonly requestId: string;
@@ -42,9 +42,9 @@ export class nexaraError extends Error {
   /** Present only when the error was synthesised from a real Response. */
   readonly response: Response | undefined;
 
-  constructor(init: nexaraErrorInit) {
+  constructor(init: NexaraErrorInit) {
     super(init.envelope.message);
-    this.name = "nexaraError";
+    this.name = "NexaraError";
     this.code = init.envelope.code;
     this.status = init.status;
     this.requestId = init.requestId;
@@ -54,46 +54,46 @@ export class nexaraError extends Error {
   }
 }
 
-export class BadRequestError extends nexaraError {
-  constructor(init: nexaraErrorInit) {
+export class BadRequestError extends NexaraError {
+  constructor(init: NexaraErrorInit) {
     super(init);
     this.name = "BadRequestError";
   }
 }
 
-export class UnauthenticatedError extends nexaraError {
-  constructor(init: nexaraErrorInit) {
+export class UnauthenticatedError extends NexaraError {
+  constructor(init: NexaraErrorInit) {
     super(init);
     this.name = "UnauthenticatedError";
   }
 }
 
-export class ForbiddenError extends nexaraError {
-  constructor(init: nexaraErrorInit) {
+export class ForbiddenError extends NexaraError {
+  constructor(init: NexaraErrorInit) {
     super(init);
     this.name = "ForbiddenError";
   }
 }
 
-export class NotFoundError extends nexaraError {
-  constructor(init: nexaraErrorInit) {
+export class NotFoundError extends NexaraError {
+  constructor(init: NexaraErrorInit) {
     super(init);
     this.name = "NotFoundError";
   }
 }
 
-export class ConflictError extends nexaraError {
-  constructor(init: nexaraErrorInit) {
+export class ConflictError extends NexaraError {
+  constructor(init: NexaraErrorInit) {
     super(init);
     this.name = "ConflictError";
   }
 }
 
-export class ValidationError extends nexaraError {
+export class ValidationError extends NexaraError {
   /** Field-level violations, when the server provides them. */
   readonly fields: Record<string, string[]>;
 
-  constructor(init: nexaraErrorInit) {
+  constructor(init: NexaraErrorInit) {
     super(init);
     this.name = "ValidationError";
     const raw = init.envelope.details["fields"];
@@ -101,22 +101,22 @@ export class ValidationError extends nexaraError {
   }
 }
 
-export class PreconditionFailedError extends nexaraError {
-  constructor(init: nexaraErrorInit) {
+export class PreconditionFailedError extends NexaraError {
+  constructor(init: NexaraErrorInit) {
     super(init);
     this.name = "PreconditionFailedError";
   }
 }
 
-export class UnsupportedError extends nexaraError {
-  constructor(init: nexaraErrorInit) {
+export class UnsupportedError extends NexaraError {
+  constructor(init: NexaraErrorInit) {
     super(init);
     this.name = "UnsupportedError";
   }
 }
 
-export class InternalError extends nexaraError {
-  constructor(init: nexaraErrorInit) {
+export class InternalError extends NexaraError {
+  constructor(init: NexaraErrorInit) {
     super(init);
     this.name = "InternalError";
   }
@@ -131,14 +131,14 @@ export interface RateLimitWindow {
   resetAt: number | null;
 }
 
-export interface RateLimitErrorInit extends nexaraErrorInit {
+export interface RateLimitErrorInit extends NexaraErrorInit {
   retryAfterSeconds: number | null;
   /** Scope that tripped the limit (echoed from `details.scope`). */
   scope: "org" | "identity" | null;
   windows: RateLimitWindow[];
 }
 
-export class RateLimitError extends nexaraError {
+export class RateLimitError extends NexaraError {
   readonly retryAfterSeconds: number | null;
   readonly scope: "org" | "identity" | null;
   readonly windows: RateLimitWindow[];
@@ -167,19 +167,19 @@ export class RateLimitError extends nexaraError {
 // ---------------------------------------------------------------------------
 
 /**
- * Decode an HTTP `Response` into the appropriate `nexaraError` subclass.
+ * Decode an HTTP `Response` into the appropriate `NexaraError` subclass.
  *
- * Forward-compatible: unknown error codes resolve to the base `nexaraError`.
+ * Forward-compatible: unknown error codes resolve to the base `NexaraError`.
  * Robust to non-JSON 5xx bodies (gateway HTML, empty body, etc.) — synthesises
  * a generic `InternalError` envelope in that case.
  */
 export async function decodeError(
   response: Response,
   fallbackRequestId: string,
-): Promise<nexaraError> {
+): Promise<NexaraError> {
   const envelope = await readErrorEnvelope(response, fallbackRequestId);
   const requestId = envelope.requestId ?? fallbackRequestId;
-  const init: nexaraErrorInit = {
+  const init: NexaraErrorInit = {
     envelope,
     status: response.status,
     requestId,
@@ -209,12 +209,12 @@ export async function decodeError(
       return decodeRateLimit(init, response);
     default:
       // Forward-compat: unknown codes still surface a typed error.
-      return new nexaraError(init);
+      return new NexaraError(init);
   }
 }
 
 function decodeRateLimit(
-  init: nexaraErrorInit,
+  init: NexaraErrorInit,
   response: Response,
 ): RateLimitError {
   const retryAfter = parseIntHeader(response.headers.get("retry-after"));

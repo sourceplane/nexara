@@ -21,7 +21,7 @@
 // All handlers accept `--output=human|json` through `ctx.outputMode`; tests
 // assert both modes for every new command.
 //
-// Errors propagate from the SDK as `nexaraError` subclasses and are
+// Errors propagate from the SDK as `NexaraError` subclasses and are
 // translated to exit codes by `formatCliError` in the runner.
 
 import type { CommandContext, CommandResult } from "../router.js";

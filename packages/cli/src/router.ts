@@ -10,7 +10,7 @@
 //   - Boolean flags pass `true`. The first positional that does NOT match a
 //     registered subcommand starts the positional list for that command.
 
-import type { nexara } from "@saas/sdk";
+import type { Nexara } from "@saas/sdk";
 
 import type { OutputMode } from "./output/index.js";
 import type { TokenStore } from "./token-store/types.js";
@@ -26,11 +26,11 @@ export interface CommandContext {
   readonly contextStore: ContextStore;
   /**
    * Lazy SDK factory. Commands that need an authenticated client call this
-   * to read the token from the token store and instantiate `nexara`.
+   * to read the token from the token store and instantiate `Nexara`.
    * Throws `MissingAuthError` (translated to a friendly message by `errors.ts`)
    * when no token is stored.
    */
-  readonly sdk: () => Promise<nexara>;
+  readonly sdk: () => Promise<Nexara>;
 }
 
 export interface CommandResult {

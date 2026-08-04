@@ -1,7 +1,7 @@
 // Tests for Task 0110 — `nexara webhook secrets rotate` CLI subcommand.
 //
 // The harness injects a *fake SDK* via `sdkFactory` rather than going
-// through the real `nexara` client + a captured-fetch — the
+// through the real `Nexara` client + a captured-fetch — the
 // command is a thin one-call adapter over `sdk.webhooks.rotateSecret`,
 // so direct SDK-layer injection lets us assert the call shape (orgId,
 // endpointId, options) without modelling the request envelope. The
@@ -13,7 +13,7 @@ import * as path from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
-import type { nexara, RotateWebhookSecretResponse } from "@saas/sdk";
+import type { Nexara, RotateWebhookSecretResponse } from "@saas/sdk";
 
 import { runCli } from "../cli-runner.js";
 import { ContextStore } from "../context/store.js";
@@ -120,7 +120,7 @@ async function withHarness(
 
     const fakeSdk = {
       webhooks: { rotateSecret },
-    } as unknown as nexara;
+    } as unknown as Nexara;
 
     const runArgv = (argv: string[]): Promise<{ exitCode: number }> =>
       runCli(argv, {

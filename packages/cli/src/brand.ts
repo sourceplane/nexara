@@ -2,7 +2,7 @@
 //
 // The binary name, default API endpoint, OS keychain service, and config
 // directory live here so a rebranded instance retargets one file. The
-// `@saas/sdk` client class name (`nexara`) is intentionally NOT part of
+// `@saas/sdk` client class name (`Nexara`) is intentionally NOT part of
 // this seam — it is a code identifier, handled by the blueprint rename map
 // (BF12), not a runtime value.
 
@@ -10,10 +10,10 @@
 export const CLI_BIN = "nexara";
 
 /** Product/brand name used in human-facing CLI copy. */
-export const PRODUCT_NAME = "nexara";
+export const PRODUCT_NAME = "Nexara";
 
 /** Default API base URL when `--api-url` is not supplied. */
-export const DEFAULT_API_URL = "https://api.nexara.orun.dev";
+export const DEFAULT_API_URL = "https://api.nexara.dev";
 
 /** OS keychain service name for stored credentials. */
 export const KEYCHAIN_SERVICE = `${CLI_BIN}-cli`;

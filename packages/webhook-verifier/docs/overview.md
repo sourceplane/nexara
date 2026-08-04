@@ -7,4 +7,4 @@ below at build time.
 
 ## Depended on by
 
-- **cli** — First-class TypeScript CLI for the nexara control plane API
+- **cli** — First-class TypeScript CLI for the Nexara control plane API
