@@ -39,7 +39,11 @@
         {
           "binding": "BILLING_WORKER",
           "service": "nexara-billing-worker-stage"
-        }// @cycle-break:membership-worker->notifications-worker:LAogICAgICAgIHsKICAgICAgICAgICJiaW5kaW5nIjogIk5PVElGSUNBVElPTlNfV09SS0VSIiwKICAgICAgICAgICJzZXJ2aWNlIjogIm5leGFyYS1ub3RpZmljYXRpb25zLXdvcmtlci1zdGFnZSIKICAgICAgICB9
+        },
+        {
+          "binding": "NOTIFICATIONS_WORKER",
+          "service": "nexara-notifications-worker-stage"
+        }
       ]
     },
     "prod": {
@@ -62,7 +66,11 @@
         {
           "binding": "BILLING_WORKER",
           "service": "nexara-billing-worker-prod"
-        }// @cycle-break:membership-worker->notifications-worker:LAogICAgICAgIHsKICAgICAgICAgICJiaW5kaW5nIjogIk5PVElGSUNBVElPTlNfV09SS0VSIiwKICAgICAgICAgICJzZXJ2aWNlIjogIm5leGFyYS1ub3RpZmljYXRpb25zLXdvcmtlci1wcm9kIgogICAgICAgIH0=
+        },
+        {
+          "binding": "NOTIFICATIONS_WORKER",
+          "service": "nexara-notifications-worker-prod"
+        }
       ]
     }
   }
