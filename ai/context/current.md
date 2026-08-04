@@ -28,8 +28,8 @@ date: **15 September 2026**.
 
 ## Next
 
-- **NX0** — reframe `README.md` and `intent.yaml` from "starter" to Nexara, and
-  author `docs/overview.md` as the catalog front page.
+- ~~**NX0** — reframe `README.md` and `intent.yaml` from "starter" to Nexara,
+  and author `docs/overview.md` as the catalog front page.~~ **Done.**
 - **NX1 → NX4** — contracts and schema, the pure determination engine,
   aggregation, then the worker/edge/SDK/CLI slice. This is the demo cut.
 - **NX1.5 is a hard gate between NX1 and NX3.** The schema and tenant-isolation

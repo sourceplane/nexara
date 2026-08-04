@@ -7,7 +7,7 @@
 
 | ID | Status | Notes |
 |----|--------|-------|
-| NX0 | Charter landed; repo/catalog framing not started | This PR lands the spec set only; the epic is **Ready**, not Draft |
+| NX0 | **Done** | Charter landed; repo + catalog reframed to Nexara; `docs/overview.md` is the front page |
 | NX1 | Not started | Contracts, migrations `200`–`240`, RBAC actions |
 | NX1.5 | Not started | Gate — adversarial schema + isolation review, `schema-review.md` |
 | NX2 | Not started | Determination engine + boundary and reproducibility tests |
@@ -18,6 +18,30 @@
 | NX7 | Not started | Shopify adapter |
 | NX8 | Not started | Console |
 | NX9 | Not started | Entitlements, demo tenant, docs, verification |
+
+## As-built — NX0 (product identity)
+
+Documentation and catalog metadata only. No component, no schema, no code.
+
+- `docs/overview.md` — new. The workspace front page: what Nexara does, the
+  three invariants and why each is load-bearing, the scope boundary, how it is
+  built, and the `verified` gate. Written for a customer or a prospect, which
+  is a different reader from `README.md`'s.
+- `README.md` — opening rewritten in product terms; the platform paragraph
+  demoted to *how it is built*; a Status bullet added for the epic and a second
+  one stating plainly that no environment runs a verified rule set; the two
+  product workers added to the workspace layout.
+- `intent.yaml` — `metadata.description` reframed; the `repo` entity gains
+  `description`, `tags`, and `links`; `repo.docs.overview` now points at
+  `docs/overview.md` rather than `README.md`, and `design.md` joins the
+  role-tagged pages as the architecture doc.
+
+**Decision recorded here because it is not obvious from the diff:** the catalog
+front page and the repo README are deliberately *different documents*. Orun
+renders `repo.docs.overview` to the workspace Docs library, where the reader is
+someone evaluating the product; `README.md`'s reader is someone about to build
+it. Pointing both at one file is what let the workspace describe a starter for
+as long as it did.
 
 ## As-built (introducing PR)
 

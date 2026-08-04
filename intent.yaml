@@ -3,7 +3,7 @@ kind: Intent
 
 metadata:
   name: nexara
-  description: Reusable Cloudflare and Supabase multi-tenant SaaS starter
+  description: Economic-nexus threshold monitoring for ecommerce sellers
   namespace: sourceplane
 
 execution:
@@ -141,10 +141,33 @@ environments:
 
 # Repo-level catalog entity: front page + role-tagged docs (rendered in
 # the workspace Docs library, pinned to the commit by `orun plan`).
+#
+# NX0: the front page is `docs/overview.md`, not `README.md`. The catalog
+# front page is what a customer or a prospect is shown; README.md is what a
+# contributor reads to build the thing. They are different documents with
+# different readers, and conflating them is why the workspace described a
+# starter for as long as it did.
 repo:
-  displayName: nexara
+  displayName: Nexara
+  description: >-
+    Economic-nexus threshold monitoring for ecommerce sellers — an append-only
+    sale-event ledger, per-jurisdiction measurement against versioned rule data,
+    and immutable determinations that can be reproduced years later.
+  tags:
+    - sales-tax
+    - compliance
+    - economic-nexus
+    - ecommerce
+    - multi-tenant
+    - cloudflare-workers
+    - supabase
+  links:
+    - { title: Product overview, url: docs/overview.md }
+    - { title: nexus epic, url: specs/epics/nexus/README.md }
+    - { title: Technical design, url: specs/epics/nexus/design.md }
   docs:
-    overview: README.md
+    overview: docs/overview.md
     pages:
+      - { path: specs/epics/nexus/design.md, role: architecture, title: nexus — technical design }
       - { path: ai/context/operations.md, role: runbook, title: Operating contract }
       - { path: ai/context/deployment.md, role: reference, title: Live deployment manifest }
