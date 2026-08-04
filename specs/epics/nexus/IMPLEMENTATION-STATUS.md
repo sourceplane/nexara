@@ -13,11 +13,70 @@
 | NX2 | **Done** | Determination engine + boundary, purity, and reproducibility tests |
 | NX3 | **Done** | Aggregation, ledger append, tenant-scoping CI scan |
 | NX4 | **Done** | `nexus-worker` + edge facade + SDK + CLI |
-| NX5 | Not started | Evaluation cron, determinations, alerts |
+| NX5 | **Done** | Evaluation cron, determinations, alerts |
 | NX6 | Not started | `channels-worker` + Stripe |
 | NX7 | Not started | Shopify adapter |
 | NX8 | Not started | Console |
 | NX9 | Not started | Entitlements, demo tenant, docs, verification |
+
+## As-built — NX5 (evaluation, determinations, alerts)
+
+- `apps/nexus-worker/src/scheduled.ts` — the hourly tick, wired to
+  `7 * * * *` (offset from `metering-worker`'s `5 * * * *` so the two do not
+  contend for the same Hyperdrive pool). The account's 5-cron limit was lifted
+  by the 2026-06-11 Workers Paid upgrade, so unlike `integrations-worker`'s
+  drain this trigger is attached, not parked.
+- `apps/nexus-worker/src/alerts.ts` — transitions → `nexus.alerts` →
+  notification, with the §11 gate.
+- `apps/nexus-worker/src/events-client.ts` — `nexus.*` on the platform event
+  log.
+
+### `nexus.threshold.crossed` needed no registry entry
+
+`webhooks-worker` fans out **every** event type on the log except its own
+lifecycle events, so emitting the event *is* the registration. Adding an
+allow-list to register it against would have created a second source of truth
+about which events exist — a registry that could disagree with the log is worse
+than no registry.
+
+### Ordering that is load-bearing
+
+The alert row is written **before** the notification is enqueued, and the
+watermark advances **after** both. If the notification fails, the row still
+exists and the alert is not retried into a duplicate email; if the worker dies
+between the determination and the alert, next hour re-runs both — which is free,
+because `nexus_alerts_once_idx` makes the re-run a no-op. Losing an email is
+recoverable; sending a seller five copies of "you have crossed a tax threshold"
+is not.
+
+### One recipient gap, recorded rather than hidden
+
+Design §8 says "enqueue the notification" and does not say to whom. There is no
+clean answer inside NX5's scope: resolving org members' emails would need
+either a second SQL surface on `membership.`/`identity.` tables — the exact
+failure the tenancy scan exists to prevent, arriving from the other direction —
+or a new cross-context route on two other workers.
+
+The right answer is that a seller names their own tax contact, and the place to
+ask is the console, which does not exist until NX8. So NX5 ships the mechanism
+with a per-environment `NEXUS_ALERT_EMAIL` var, explicitly labelled a stopgap:
+when it is unset the alert row and the outgoing webhook still fire and the row
+records `notification_ref = 'no_recipient_configured'`. The gap is **queryable**
+rather than something a support ticket discovers. Carried as an NX8 follow-up.
+
+### Verification
+
+- 198 tests in `tests/nexus-worker` (was 171).
+- The acceptance criteria are the test names: crossing produces exactly one
+  determination, one alert row, one email, and one audit trail; re-running
+  immediately produces none of them; an unverified rule set produces an
+  internal-only determination and **no** customer-facing alert — while still
+  emitting the audit event, because suppressing that would leave a hole in the
+  history exactly where a dispute would look.
+- Also asserted: `crossed → approaching` does not re-alert (a position
+  oscillating around 80% would otherwise mail the seller hourly, and an alert
+  that arrives hourly stops being an alert); one org's failure does not stop
+  the others; a missing rule set is a state, not an incident.
 
 ## As-built — NX4 (worker, edge, SDK, CLI)
 

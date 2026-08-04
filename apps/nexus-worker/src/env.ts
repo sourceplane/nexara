@@ -8,4 +8,19 @@ export interface Env {
   /** Threshold alerts (NX5). Absent means alerts are recorded but not sent. */
   NOTIFICATIONS_WORKER?: Fetcher;
   ENVIRONMENT: string;
+  /**
+   * Where threshold alerts are emailed, per environment.
+   *
+   * **This is a stopgap and it is labelled as one.** The right answer is that a
+   * seller names their own tax contact, and the place to ask them is the
+   * console — which does not exist until NX8. Resolving "who should hear about
+   * this" from membership would mean a second SQL surface on another context's
+   * tables, or an email-resolution chain through identity; both are worse than
+   * an explicitly temporary var.
+   *
+   * When unset, the alert row and the outgoing webhook still fire and the row
+   * records that no email was sent. The gap is visible rather than silent, and
+   * `nexus.alerts.notification_ref` is where you look for it.
+   */
+  NEXUS_ALERT_EMAIL?: string;
 }

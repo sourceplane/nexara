@@ -101,6 +101,28 @@ one case where a silent no-op is wrong. **Open:** a first-class amendment event
 long-term answer and is additive against the current schema — it is not in
 NX0–NX9.
 
+### R10 — A threshold alert may have nobody to send to · Medium
+
+Raised at NX5. Design §8 says "enqueue the notification" and does not say to
+whom, and there is no clean answer inside the nexus context: resolving org
+members' emails needs either a second SQL surface on `membership.`/`identity.`
+tables — the exact failure design §7.3's scan exists to prevent, arriving from
+the other direction — or new cross-context routes on two other workers.
+
+NX5 ships the mechanism against a per-environment `NEXUS_ALERT_EMAIL` var,
+labelled a stopgap in the code. When it is unset the alert row and the outgoing
+`nexus.threshold.crossed` webhook still fire, and the row records
+`notification_ref = 'no_recipient_configured'` — so "a threshold moved and
+nobody was told" is a queryable fact rather than something a support ticket
+discovers.
+
+Mitigation: the outgoing webhook is a working machine-readable alert today.
+**Open:** a seller naming their own tax contact needs a console to ask in, so
+the resolution lands with NX8. A compliance alert arguably *should* go to a
+named finance contact rather than to whoever happens to hold an admin role,
+which makes the stopgap closer to the eventual design than a member fan-out
+would have been.
+
 ### R8 — Provider API and webhook-shape drift · Low
 
 Stripe and Shopify version their APIs and change payload shapes.
