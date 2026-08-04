@@ -1,10 +1,10 @@
-// Base HTTP transport for the nexara SDK.
+// Base HTTP transport for the Nexara SDK.
 //
 // Goals:
 // - Runtime-agnostic: native `fetch`, native `crypto.randomUUID`, no `node:*`.
 // - Stripe-style ergonomics: `Idempotency-Key` is a per-request option,
 //   request-id auto-generated when caller omits it, abort signal passthrough.
-// - Typed errors: every non-2xx response is decoded into a `nexaraError`
+// - Typed errors: every non-2xx response is decoded into a `NexaraError`
 //   subclass via `decodeError`.
 // - Forward-compatible envelope: success responses are `{ data: T, meta: {...} }`
 //   today; the transport only requires the `data` field to exist.
@@ -17,8 +17,8 @@ export type AuthOption =
 
 export interface ClientOptions {
   /**
-   * Base URL of the nexara api-edge worker, e.g.
-   * `https://api.nexara.orun.dev`. Trailing slash is stripped.
+   * Base URL of the Nexara api-edge worker, e.g.
+   * `https://api.nexara.dev`. Trailing slash is stripped.
    */
   baseUrl: string;
   /** Optional auth credential; sent on every request when present. */
@@ -68,7 +68,7 @@ interface PerformInput {
  *
  * The transport is intentionally exported so power users can drive it without
  * the high-level resource namespaces, but the public stable surface is
- * `nexara` (the client class wired up in `index.ts`).
+ * `Nexara` (the client class wired up in `index.ts`).
  */
 export class Transport {
   readonly baseUrl: string;
@@ -83,7 +83,7 @@ export class Transport {
     const fetchImpl = options.fetch ?? globalThis.fetch;
     if (typeof fetchImpl !== "function") {
       throw new TypeError(
-        "nexara SDK requires a fetch implementation. Pass `fetch` in options on platforms without a global.",
+        "Nexara SDK requires a fetch implementation. Pass `fetch` in options on platforms without a global.",
       );
     }
     this.fetchImpl = fetchImpl.bind(globalThis);
@@ -214,7 +214,7 @@ export function generateRequestId(): string {
     return `req_${hex}`;
   }
   throw new Error(
-    "nexara SDK requires the Web Crypto API (globalThis.crypto). No source of randomness was found.",
+    "Nexara SDK requires the Web Crypto API (globalThis.crypto). No source of randomness was found.",
   );
 }
 

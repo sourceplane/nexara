@@ -2,7 +2,7 @@
 // `runCli(process.argv.slice(2))`; this module owns the dispatch logic so
 // it stays unit-testable.
 
-import { nexara } from "@saas/sdk";
+import { Nexara } from "@saas/sdk";
 
 import { CLI_BIN, PRODUCT_NAME } from "./brand.js";
 import { Router, parseArgv } from "./router.js";
@@ -61,7 +61,7 @@ export interface RunOptions {
   /** Inject a context store (tests). */
   readonly contextStore?: ContextStore;
   /** Override SDK factory (tests). */
-  readonly sdkFactory?: (baseUrl: string, token: string) => nexara;
+  readonly sdkFactory?: (baseUrl: string, token: string) => Nexara;
   /** Override config dir for the file token store / context store. */
   readonly configDir?: string;
   /**
@@ -124,11 +124,11 @@ export async function runCli(
     opts.contextStore ??
     new ContextStore(opts.configDir !== undefined ? { configDir: opts.configDir } : {});
 
-  const sdk = async (): Promise<nexara> => {
+  const sdk = async (): Promise<Nexara> => {
     const cred = await tokenStore.load();
     if (!cred) throw new MissingAuthError();
     if (opts.sdkFactory) return opts.sdkFactory(cred.apiUrl, cred.token);
-    return new nexara({
+    return new Nexara({
       baseUrl: cred.apiUrl,
       auth: { kind: "bearer", token: cred.token },
     });

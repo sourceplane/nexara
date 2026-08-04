@@ -2,7 +2,7 @@ apiVersion: sourceplane.io/v1
 kind: Component
 metadata:
   name: sdk
-  description: Runtime-agnostic TypeScript SDK for the nexara control plane API
+  description: Runtime-agnostic TypeScript SDK for the Nexara control plane API
 spec:
   docs:
     overview: docs/overview.md

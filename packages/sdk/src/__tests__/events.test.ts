@@ -7,7 +7,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-import { nexara, AUDIT_ITERATOR_MAX_PAGES } from "../index.js";
+import { Nexara, AUDIT_ITERATOR_MAX_PAGES } from "../index.js";
 import type { PublicAuditEntry } from "@saas/contracts/events";
 
 interface PageMeta {
@@ -62,8 +62,8 @@ function entry(id: string, occurredAt: string): Partial<PublicAuditEntry> {
   };
 }
 
-function client(fetchImpl: typeof fetch): nexara {
-  return new nexara({ baseUrl: "https://api.test", fetch: fetchImpl });
+function client(fetchImpl: typeof fetch): Nexara {
+  return new Nexara({ baseUrl: "https://api.test", fetch: fetchImpl });
 }
 
 describe("EventsClient.iterAuditEntries", () => {

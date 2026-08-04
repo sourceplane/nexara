@@ -35,8 +35,8 @@ below at build time.
 - **policy-worker-tests**
 - **projects-worker** — Cloudflare Worker for the Projects runtime
 - **projects-worker-tests**
-- **sdk** — Runtime-agnostic TypeScript SDK for the nexara control plane API
+- **sdk** — Runtime-agnostic TypeScript SDK for the Nexara control plane API
 - **testing**
-- **web-console-next** — Next.js 15 + opennextjs/cloudflare delivery of the nexara web console (per-environment, Workers + Static Assets)
+- **web-console-next** — Next.js 15 + opennextjs/cloudflare delivery of the Nexara web console (per-environment, Workers + Static Assets)
 - **web-console-next-tests**
 - **webhooks-worker** — Cloudflare Worker for webhook endpoint, subscription, and delivery-attempt management

@@ -17,7 +17,7 @@ import * as path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import type {
-  nexara,
+  Nexara,
   PublicWebhookDeliveryAttempt,
   ReplayWebhookDeliveryResponse,
 } from "@saas/sdk";
@@ -109,7 +109,7 @@ async function withHarness(
 
     const fakeSdk = {
       webhooks: { replayDelivery },
-    } as unknown as nexara;
+    } as unknown as Nexara;
 
     const runArgv = (argv: string[]): Promise<{ exitCode: number }> =>
       runCli(argv, {

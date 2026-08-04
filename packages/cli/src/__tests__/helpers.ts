@@ -1,6 +1,6 @@
 // Test helpers: in-memory token store + context store + fake SDK.
 
-import type { nexara } from "@saas/sdk";
+import type { Nexara } from "@saas/sdk";
 
 import type { StoredCredential, TokenStore } from "../token-store/types.js";
 
@@ -54,4 +54,4 @@ export function envelope<T>(data: T, requestId = "req_test"): {
   return { data, meta: { requestId, cursor: null } };
 }
 
-export type nexaraFactory = (baseUrl: string, token: string) => nexara;
+export type NexaraFactory = (baseUrl: string, token: string) => Nexara;
