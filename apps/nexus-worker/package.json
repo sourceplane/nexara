@@ -1,0 +1,19 @@
+{
+  "name": "@saas/nexus-worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250508.0",
+    "@saas/eslint-config": "workspace:*",
+    "@saas/tsconfig": "workspace:*",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@saas/contracts": "workspace:*"
+  }
+}

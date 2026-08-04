@@ -1,0 +1,22 @@
+{
+  "extends": "../../tooling/tsconfig/base.json",
+  "compilerOptions": {
+    "types": ["jest", "node"],
+    "allowSyntheticDefaultImports": true,
+    "composite": false,
+    "incremental": false,
+    "declaration": false,
+    "declarationMap": false,
+    "baseUrl": ".",
+    "paths": {
+      "@saas/contracts": ["../../packages/contracts/src/index.ts"],
+      "@saas/contracts/*": ["../../packages/contracts/src/*.ts"],
+      "@nexus-worker/engine": ["../../apps/nexus-worker/src/engine/index.ts"],
+      "@nexus-worker/*": ["../../apps/nexus-worker/src/*.ts"],
+      "@saas/db": ["../../packages/db/src/index.ts"],
+      "@saas/db/*": ["../../packages/db/src/*/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
