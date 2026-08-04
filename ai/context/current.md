@@ -65,8 +65,12 @@ date: **15 September 2026**.
   [`connector-gate.md`](../../specs/epics/nexus/connector-gate.md), which is
   what opened the milestone. The backfill/live seam is tested through the real
   drain, not asserted about the index.
-- **NX7 → NX9** — the Shopify adapter, the console, then the commercial
-  surface and live verification.
+- ~~**NX7** — the Shopify adapter.~~ **Done.** Decimal-string amounts are
+  parsed rather than multiplied; the §6.2 fallback level is recorded on every
+  row; marketplace facilitation takes *either* signal, defaulting an unknown
+  source to the seller's own sale.
+- **NX8 → NX9** — the console (including the R10 alert-contact resolution),
+  then the commercial surface and live verification.
 - Two questions to answer before they get expensive: who publishes and verifies
   rule sets (Q1), and whether the tenant is a seller or an accounting firm
   holding many sellers (Q2). Q4, Q5, and Q6 gate NX6. **R9** (a provider

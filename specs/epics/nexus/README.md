@@ -13,7 +13,7 @@ penalties later. Nexara watches the line and says so on the day it is crossed.
 
 | Field | Value |
 |-------|-------|
-| Status | **In delivery** — NX0–NX6 have landed on `main`. Q4–Q6 are resolved in [`connector-gate.md`](./connector-gate.md); NX7–NX9 follow |
+| Status | **In delivery** — NX0–NX7 have landed on `main`. NX8 (console) and NX9 (commercial) remain |
 | Cluster | **NX** (NX0–NX9, plus the NX1.5 review gate) — the first *product* bounded context on this starter |
 | Owner(s) | new `apps/nexus-worker`, new `apps/channels-worker`, `apps/api-edge`, `packages/{contracts,policy-engine,db,sdk,cli}`, `apps/web-console-next` |
 | Target branch | `main` |
@@ -73,7 +73,7 @@ measured, and the code version that decided — re-run it yourself."*
 | NX4 | `nexus-worker` + edge + SDK + CLI: exposure, jurisdiction detail, evaluate, ledger import | **Done** |
 | NX5 | Evaluation cron, immutable determinations, threshold alerts (notifications + events + outgoing webhook type) | **Done** |
 | NX6 | `channels-worker`: provider seam, inbound inbox + drain, Stripe adapter, backfill/live-sync sequencing | **Done** |
-| NX7 | Shopify adapter: ship-to jurisdiction resolution + marketplace-facilitator identification | Ready |
+| NX7 | Shopify adapter: ship-to jurisdiction resolution + marketplace-facilitator identification | **Done** |
 | NX8 | Console: exposure board, jurisdiction detail + determination explainer, ledger, channels, registrations, read-only support view, storefront | Ready |
 | NX9 | Commercial + evidence: metered plans and entitlements, seeded demo tenant, docs/catalog, stage + prod verification | Ready |
 

@@ -32,6 +32,7 @@
       "^@saas/contracts$": "<rootDir>/../../packages/contracts/src/index.ts",
       "^@saas/contracts/(.*)$": "<rootDir>/../../packages/contracts/src/$1.ts",
       "^@channels-worker/(.*)$": "<rootDir>/../../apps/channels-worker/src/$1.ts",
+      "^@nexus-worker/engine$": "<rootDir>/../../apps/nexus-worker/src/engine/index.ts",
       "^@saas/db$": "<rootDir>/../../packages/db/src/index.ts",
       "^@saas/db/manifest$": "<rootDir>/../../packages/db/src/manifest.ts",
       "^@saas/db/types$": "<rootDir>/../../packages/db/src/types.ts",
