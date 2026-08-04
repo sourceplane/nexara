@@ -15,9 +15,57 @@
 | NX4 | **Done** | `nexus-worker` + edge facade + SDK + CLI |
 | NX5 | **Done** | Evaluation cron, determinations, alerts |
 | NX6 | **Done** | `channels-worker` + Stripe; Q4/Q5/Q6 resolved in `connector-gate.md` |
-| NX7 | Not started | Shopify adapter |
+| NX7 | **Done** | Shopify adapter |
 | NX8 | Not started | Console |
 | NX9 | Not started | Entitlements, demo tenant, docs, verification |
+
+## As-built — NX7 (the Shopify adapter)
+
+`apps/channels-worker/src/providers/shopify.ts` against the §6.1 seam, wired
+into the registry. 41 new tests.
+
+### The one line that could quietly cost money
+
+Shopify reports amounts as **decimal strings** (`"129.95"`), unlike Stripe's
+integer minor units. `toCents` **parses digits rather than multiplying a
+float**: `Math.round(Number(x) * 100)` is right for the values you try and
+wrong for the ones you do not, and "the ones you do not" is the entire tail of
+a seller's order history. A malformed amount returns null and the event is
+dropped — zero would be a silent under-count that reads as "a quiet month".
+
+### The fallback order, and the level recorded on every row
+
+`shipping_address` → `billing_address` → the jurisdiction implied by the
+order's `tax_lines`. Each level has its own test, and the level that fired is
+on the canonical event, because R4 requires a low-confidence attribution to be
+**visible** rather than laundered into a fact.
+
+Two sub-cases that are easy to get wrong and are tested: a US address with no
+province falls *through* to the next level rather than inventing a state, and
+a bare two-letter tax-line code is read as a US state — Shopify emits both
+`US-WA` and `WA`, and guessing wrong puts a Washington sale in a country
+called WA.
+
+### Marketplace facilitation: either signal, not both
+
+`source_name` naming a known marketplace, **or** a tax line flagged
+`channel_liable` — Shopify's own "the sales channel remitted this, not the
+merchant", which is what facilitation means. Either alone can be wrong: a
+seller can route Amazon orders through a custom app with an unfamiliar
+`source_name`, and a marketplace can decline to remit where it has no
+obligation. Requiring **both** would under-report facilitation and quietly pull
+sales back into a seller's own threshold; accepting **either** over-reports it,
+which under a `marketplace_treatment = 'exclude'` rule flags a seller for
+review rather than silently clearing them. An unrecognised source defaults to
+*the seller's own sale* — the direction that does not silently exclude revenue.
+
+### The acceptance criterion, end to end
+
+"Excluded under `exclude` and included under `include`, from the same ledger,
+changing only the rule" is asserted **through the real engine**, not by
+checking a boolean. The boolean is not the claim; the claim is that one
+seller's ledger produces two different lawful answers depending on the state,
+and that the explainer can show both side by side honestly.
 
 ## As-built — NX6 (channels-worker and Stripe)
 

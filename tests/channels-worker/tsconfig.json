@@ -12,6 +12,7 @@
       "@saas/contracts": ["../../packages/contracts/src/index.ts"],
       "@saas/contracts/*": ["../../packages/contracts/src/*.ts"],
       "@channels-worker/*": ["../../apps/channels-worker/src/*.ts"],
+      "@nexus-worker/engine": ["../../apps/nexus-worker/src/engine/index.ts"],
       "@saas/db": ["../../packages/db/src/index.ts"],
       "@saas/db/*": ["../../packages/db/src/*/index.ts"]
     }

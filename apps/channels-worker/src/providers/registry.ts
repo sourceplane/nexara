@@ -9,6 +9,7 @@
 import type { Env } from "../env.js";
 import type { ProviderResolution } from "./types.js";
 import { createStripeProvider } from "./stripe.js";
+import { createShopifyProvider } from "./shopify.js";
 
 export type ProviderId = "stripe" | "shopify";
 
@@ -27,11 +28,13 @@ export function resolveProvider(env: Env, id: ProviderId): ProviderResolution {
       if (!clientId || !secretKey || !webhookSecret) return null;
       return createStripeProvider({ clientId, secretKey, webhookSecret });
     }
-    case "shopify":
-      // NX7. Resolving to null here is the honest state: the adapter does not
-      // exist, so a connect attempt is a parked 501 rather than a channel that
-      // never ingests.
-      return null;
+    case "shopify": {
+      const clientId = env.SHOPIFY_CLIENT_ID;
+      const clientSecret = env.SHOPIFY_CLIENT_SECRET;
+      const webhookSecret = env.SHOPIFY_WEBHOOK_SECRET;
+      if (!clientId || !clientSecret || !webhookSecret) return null;
+      return createShopifyProvider({ clientId, clientSecret, webhookSecret });
+    }
     default:
       return null;
   }
