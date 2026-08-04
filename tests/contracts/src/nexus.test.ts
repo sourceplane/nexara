@@ -24,6 +24,8 @@ import {
 import type {
   DeterminationInputs,
   DeterminationOutcome,
+  GetAlertContactResponse,
+  PublicAlertContact,
   ImportLedgerRequest,
   JurisdictionAggregate,
   PublicDetermination,
@@ -384,5 +386,30 @@ describe("contracts: ledger import", () => {
     expect(row.id).toBeUndefined();
     expect(row.source).toBeUndefined();
     expect(row.ingestedAt).toBeUndefined();
+  });
+});
+
+// ── R10: the alert contact ───────────────────────────────────
+
+describe("PublicAlertContact", () => {
+  it("carries no user id — the tax contact is often not a console user", () => {
+    const contact: PublicAlertContact = {
+      email: "bookkeeper@acme.test",
+      label: "Our bookkeeper",
+      updatedAt: "2026-08-01T00:00:00.000Z",
+    };
+    // A `userId` here would compile only if the contract had one, and having
+    // one would force an accountant to hold a login before they could be told
+    // a threshold was crossed.
+    expect(Object.keys(contact).sort()).toEqual(["email", "label", "updatedAt"]);
+  });
+
+  it("makes the environment fallback a separate field, not an overloaded null", () => {
+    // Three states need two fields. `contact: null` alone cannot distinguish
+    // "alerts go nowhere" from "alerts go somewhere the seller did not pick".
+    const nobody: GetAlertContactResponse = { contact: null, hasEnvironmentFallback: false };
+    const elsewhere: GetAlertContactResponse = { contact: null, hasEnvironmentFallback: true };
+    expect(nobody.contact).toBe(elsewhere.contact);
+    expect(nobody.hasEnvironmentFallback).not.toBe(elsewhere.hasEnvironmentFallback);
   });
 });

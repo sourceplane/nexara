@@ -1,9 +1,18 @@
-// Edge facade for `nexus-worker`.
+// Edge facade for `nexus-worker` and the `/channels` sub-tree of
+// `channels-worker`.
 //
-// Registered in the dispatch chain **before** `isOrgRoute`, because every
-// route here lives under `/v1/organizations/:orgId/…` and the org facade's
-// pattern would otherwise swallow them. That ordering is load-bearing and it
-// is asserted by a test rather than by a comment alone.
+// Registered in the dispatch chain before `isOrgRoute`. Today that ordering is
+// belt-and-braces rather than load-bearing: `org-facade` enumerates its paths
+// exactly (`/members`, `/invitations`, `/api-keys`, and the bare org id), so
+// none of the routes here collide with it. The earlier version of this comment
+// claimed the org facade would otherwise swallow them, which was wrong, and
+// the test written to prove it is what found that out.
+//
+// What the ordering does buy is that a future widening of `org-facade` — a
+// catch-all `/v1/organizations/:id/*`, say — cannot silently capture this
+// epic's entire API. `nexus-facade.test.ts` asserts the disjointness directly,
+// so such a widening fails a test rather than producing 404s from a worker
+// that never saw the request.
 
 import type { Env } from "./env.js";
 import { errorResponse, withEdgeTimings } from "./http.js";
@@ -14,6 +23,7 @@ import { createTimings } from "@saas/contracts/timing";
 const EXPOSURE_RE = /^\/v1\/organizations\/[^/]+\/nexus\/exposure$/;
 const JURISDICTION_RE = /^\/v1\/organizations\/[^/]+\/nexus\/jurisdictions\/[^/]+$/;
 const EVALUATE_RE = /^\/v1\/organizations\/[^/]+\/nexus\/evaluate$/;
+const ALERT_CONTACT_RE = /^\/v1\/organizations\/[^/]+\/nexus\/alert-contact$/;
 const LEDGER_RE = /^\/v1\/organizations\/[^/]+\/ledger$/;
 const LEDGER_IMPORT_RE = /^\/v1\/organizations\/[^/]+\/ledger\/import$/;
 const REGISTRATIONS_RE = /^\/v1\/organizations\/[^/]+\/registrations$/;
@@ -38,6 +48,7 @@ const ROUTES: Array<{ re: RegExp; methods: ReadonlySet<string> }> = [
   { re: EXPOSURE_RE, methods: new Set(["GET"]) },
   { re: JURISDICTION_RE, methods: new Set(["GET"]) },
   { re: EVALUATE_RE, methods: new Set(["POST"]) },
+  { re: ALERT_CONTACT_RE, methods: new Set(["GET", "PUT", "DELETE"]) },
   { re: LEDGER_IMPORT_RE, methods: new Set(["POST"]) },
   { re: LEDGER_RE, methods: new Set(["GET"]) },
   { re: REGISTRATIONS_RE, methods: new Set(["GET", "PUT"]) },

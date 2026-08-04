@@ -4,6 +4,9 @@
 // client here. Maps to `apps/nexus-worker` via the api-edge `nexus-facade`.
 
 import type {
+  GetAlertContactResponse,
+  SetAlertContactRequest,
+  SetAlertContactResponse,
   EvaluateRequest,
   EvaluateResponse,
   GetJurisdictionResponse,
@@ -63,6 +66,58 @@ export class ExposureClient {
       {
         method: "GET",
         path: `/v1/organizations/${encodeURIComponent(orgId)}/nexus/jurisdictions/${encodeURIComponent(code)}`,
+      },
+      opts,
+    );
+  }
+
+  /**
+   * GET /v1/organizations/:orgId/nexus/alert-contact
+   *
+   * Lives on this client because a threshold alert is a consequence of a
+   * position, and the board is where a seller notices they need one. The
+   * response reports whether an environment-level fallback exists, so the
+   * console can tell "going somewhere you did not choose" from "going
+   * nowhere" — a single null cannot.
+   */
+  getAlertContact(orgId: string, opts: RequestOptions = {}): Promise<GetAlertContactResponse> {
+    return this.transport.request<GetAlertContactResponse>(
+      {
+        method: "GET",
+        path: `/v1/organizations/${encodeURIComponent(orgId)}/nexus/alert-contact`,
+      },
+      opts,
+    );
+  }
+
+  /** PUT /v1/organizations/:orgId/nexus/alert-contact */
+  setAlertContact(
+    orgId: string,
+    body: SetAlertContactRequest,
+    opts: RequestOptions = {},
+  ): Promise<SetAlertContactResponse> {
+    return this.transport.request<SetAlertContactResponse>(
+      {
+        method: "PUT",
+        path: `/v1/organizations/${encodeURIComponent(orgId)}/nexus/alert-contact`,
+        body,
+      },
+      opts,
+    );
+  }
+
+  /**
+   * DELETE /v1/organizations/:orgId/nexus/alert-contact
+   *
+   * Returns the org to the environment fallback. Its own verb rather than an
+   * empty-string update, because "no contact chosen" and "contact set to
+   * nothing" are different states and only one should read as a fallback.
+   */
+  clearAlertContact(orgId: string, opts: RequestOptions = {}): Promise<GetAlertContactResponse> {
+    return this.transport.request<GetAlertContactResponse>(
+      {
+        method: "DELETE",
+        path: `/v1/organizations/${encodeURIComponent(orgId)}/nexus/alert-contact`,
       },
       opts,
     );

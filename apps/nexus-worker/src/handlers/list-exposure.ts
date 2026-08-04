@@ -21,9 +21,18 @@ import { toPublicRuleSet } from "../mappers.js";
 import { determinationPublicId } from "../ids.js";
 import { isEvaluable, jurisdictionName } from "../jurisdictions.js";
 import { evaluateThreshold } from "../engine/threshold.js";
+import { checkBillingEntitlement } from "../billing-client.js";
+import {
+  JURISDICTIONS_LIMIT_KEY,
+  monitoredLimitFrom,
+  splitByLimit,
+} from "../entitlements.js";
+import { orgPublicId } from "../ids.js";
 
 export interface HandleListExposureDeps {
   repo?: NexusRepository;
+  /** Test seam. Defaults to the real billing service-binding call. */
+  checkEntitlement?: typeof checkBillingEntitlement;
 }
 
 export async function handleListExposure(
@@ -67,11 +76,15 @@ export async function handleListExposure(
     const ruleSet = ruleSetResult.value;
 
     const onDate = new Date().toISOString().slice(0, 10);
-    const [rulesResult, determinationsResult, registrationsResult] = await Promise.all([
-      timings.measure("rules", () => repo.listRulesInForce(asUuid(ruleSet.id), onDate)),
-      timings.measure("determinations", () => repo.listCurrentDeterminations(orgId)),
-      timings.measure("registrations", () => repo.listRegistrations(orgId)),
-    ]);
+    const [rulesResult, determinationsResult, registrationsResult, activeResult] =
+      await Promise.all([
+        timings.measure("rules", () => repo.listRulesInForce(asUuid(ruleSet.id), onDate)),
+        timings.measure("determinations", () => repo.listCurrentDeterminations(orgId)),
+        timings.measure("registrations", () => repo.listRegistrations(orgId)),
+        // Seniority order — the repository returns these sorted, and the plan
+        // split depends on that order being stable (see `entitlements.ts`).
+        timings.measure("active", () => repo.listActiveJurisdictions(orgId)),
+      ]);
 
     if (!rulesResult.ok || !determinationsResult.ok || !registrationsResult.ok) {
       endTotal();
@@ -83,6 +96,26 @@ export async function handleListExposure(
       );
     }
 
+    // The plan limit (design §9). A billing failure yields null — unlimited —
+    // because a billing outage must not silently stop monitoring a seller's
+    // tax exposure. Deliberately the opposite of how the authorization gate
+    // fails; see `entitlements.ts` for why the two differ.
+    const entitlement = env.BILLING_WORKER
+      ? await timings.measure("entitlement", () =>
+          (deps?.checkEntitlement ?? checkBillingEntitlement)(
+            env.BILLING_WORKER!,
+            orgPublicId(orgId),
+            JURISDICTIONS_LIMIT_KEY,
+            requestId,
+          ),
+        )
+      : null;
+    const monitoredLimit = monitoredLimitFrom(
+      entitlement && entitlement.kind === "decision" ? entitlement.decision : null,
+    );
+    const split = splitByLimit(activeResult.ok ? activeResult.value : [], monitoredLimit);
+    const lockedSet = new Set(split.locked);
+
     const determinations = new Map(determinationsResult.value.map((d) => [d.jurisdiction, d]));
     const registrations = new Map(
       registrationsResult.value
@@ -93,7 +126,12 @@ export async function handleListExposure(
     const exposure: PublicJurisdictionExposure[] = rulesResult.value
       .filter((rule) => isEvaluable(rule.jurisdiction))
       .map((rule) => {
-        const determination = determinations.get(rule.jurisdiction) ?? null;
+        const locked = lockedSet.has(rule.jurisdiction);
+        // A locked card carries no measurement at all. Passing the stored
+        // determination through and merely flagging it would leak the answer
+        // the plan does not include, and would also go stale silently once
+        // evaluation stops covering this jurisdiction.
+        const determination = locked ? null : (determinations.get(rule.jurisdiction) ?? null);
         const registration = registrations.get(rule.jurisdiction) ?? null;
 
         // A registered seller's card says "registered" over whatever the
@@ -127,12 +165,16 @@ export async function handleListExposure(
           evaluatedAt: determination?.evaluatedAt.toISOString() ?? null,
           ruleSetVersion: ruleSet.version,
           ruleSetVerified: ruleSet.verified,
+          locked,
         };
       });
 
     endTotal();
     return withTimings(
-      successResponse({ exposure, ruleSet: toPublicRuleSet(ruleSet) }, requestId),
+      successResponse(
+        { exposure, ruleSet: toPublicRuleSet(ruleSet), monitoredLimit },
+        requestId,
+      ),
       requestId,
       "nexus.exposure",
       timings,

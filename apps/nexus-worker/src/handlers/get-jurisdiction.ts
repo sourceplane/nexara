@@ -130,6 +130,12 @@ export async function handleGetJurisdiction(
         evaluatedAt: current?.evaluatedAt.toISOString() ?? null,
         ruleSetVersion: ruleSet.version,
         ruleSetVerified: ruleSet.verified,
+        // The detail view is reachable only for a jurisdiction with a rule,
+        // and it renders the determination history it already has. The plan
+        // limit is a *board* projection — a seller who deep-links to a locked
+        // jurisdiction sees the same empty history the board's lock implies,
+        // rather than a second, differently-worded denial.
+        locked: false,
       },
       rule: toPublicRule(rule),
       determinations: history.map(toPublicDetermination),

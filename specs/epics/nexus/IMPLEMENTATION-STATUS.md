@@ -16,8 +16,223 @@
 | NX5 | **Done** | Evaluation cron, determinations, alerts |
 | NX6 | **Done** | `channels-worker` + Stripe; Q4/Q5/Q6 resolved in `connector-gate.md` |
 | NX7 | **Done** | Shopify adapter |
-| NX8 | Not started | Console |
-| NX9 | Not started | Entitlements, demo tenant, docs, verification |
+| NX8 | **Done** | Console, storefront, and the support capability ([`support-view.md`](./support-view.md)) |
+| NX9 | **Partial** | Entitlements, demo tenant, docs done; metering and live verification blocked — see below |
+
+## As-built — NX9 (commercial and evidence)
+
+### The plan limit, and the shape that took the thinking
+
+§9's dimensions are gated as entitlements on the **existing** plan codes
+(`free`/`pro`/`business`) rather than by renaming them to the design's
+proposed Starter/Growth/Firm. Renaming a live plan code is a data migration
+against every subscription for no product gain — the code is an assignment key,
+not a label — and the catalog carries an explicit no-regress rule.
+
+The jurisdiction gate is where the real decision was. Three obvious
+implementations are each a way of losing or hiding a seller's own data:
+
+| Approach | Why not |
+|---|---|
+| Refuse the ledger row | Their history is then permanently incomplete, and **no later upgrade can repair it**. A billing limit must never cost a customer their own data. |
+| Error the whole board | Punishes growth, hides the jurisdictions they *are* entitled to, reads as an outage. |
+| Hide the excess jurisdictions | Worst of the three: a compliance product that knows a seller trades into Texas and does not say so has chosen to conceal the thing it exists to surface. |
+
+So: **everything is ingested, the excess is named but not evaluated.** Locked
+cards appear on the board by name with an upgrade prompt and the sentence that
+makes the limit fair — *your sales here are still recorded, and upgrading
+measures from the ledger you already have, with no gap*. A test asserts
+`monitored ∪ locked` is always the whole input, so no future edit can quietly
+turn "locked" into "hidden".
+
+Selection is by **seniority**, not exposure. Ranking by exposure would be more
+useful right up until a jurisdiction fell out of the monitored set the month it
+got busy, which is backwards, and it would make the monitored set flicker.
+
+**The gate fails open.** A billing outage yields "unlimited", not "zero" —
+deliberately the opposite of how the authorization gate fails. "May this person
+see this" and "have they paid for more of it" are different questions, and
+getting the second wrong during an outage would silently stop measuring a
+seller's tax exposure.
+
+### The demo tenant
+
+`nexara demo seed` writes through the **product's own public API** —
+`channels.createManual` then `ledger.import`. No seeding backdoor: a demo that
+used a private path would prove the demo works, where this proves the *import*
+works, which is what a customer's first day actually is. Re-seeding is safe and
+reports its `duplicates` rather than hiding them.
+
+The generator (`packages/cli/src/demo/ledger.ts`) is **deterministic — no
+clock, no RNG** — because a demo whose outcomes vary by run has anecdotes
+rather than properties. 25 tests assert the constructed outcomes, the important
+one being Washington: **under** its $100,000 line on direct sales, **over** it
+once marketplace-facilitated sales count. Same ledger, two lawful answers,
+differing only by the state's own rule — the clearest possible demonstration
+that this product measures rather than guesses.
+
+### What is NOT done, and why
+
+- **Metered dimensions are not yet ingested to `metering-worker`.** Its
+  `record-usage` route requires a real actor with membership and policy
+  context; the drain and the evaluation cron have neither. Recording them needs
+  an internal service-binding seam on `metering-worker` of the kind
+  `billing-worker` already has (`x-internal-caller` with an allow-list). That
+  is a platform change with its own authorization question — the **second**
+  one this epic has run into, after the support view — and it belongs in a
+  change that can be reviewed as such rather than folded into a feature
+  milestone. The entitlement *limits* work without it; what is missing is usage
+  *reporting*.
+- **Live stage/prod verification has not run.** `db-migrate` cannot resolve its
+  Supabase token: `Brokered secret SUPABASE_ACCESS_TOKEN binding unavailable —
+  connection int_71290a8787e54e0f9cc894e80bed844d (broker: limit_reached)`.
+  Three separate attempts over an hour failed identically, including a fresh
+  attempt-1 run that failed in ten seconds, so this is a standing cap rather
+  than a burst. It needs the connection freed or its limit raised in the Orun
+  workspace. Nothing has been half-applied — on a PR that lane runs
+  `mode=plan`.
+
+## As-built — NX8 (the console)
+
+Five pages, four components, a storefront, and a support capability that is
+not yet a support page. `packages/sdk/src/channels.ts` was written here too —
+the channels routes existed at the edge since NX6 with no client in front of
+them.
+
+### The two display rules that are the product
+
+Everything in `src/components/nexus/nexus.ts` is pure and unit-tested, because
+two of the rules there are not cosmetic:
+
+1. **`no_obligation` never renders like `clear`, and a null meter never
+   renders as 0%.** `clear` means measured and below the line;
+   `no_obligation` means there is no line; never-evaluated means we have not
+   looked. Three states, three sentences, and `meterPercent` returns **null**
+   rather than 0 for the last two so a component cannot accidentally draw an
+   empty bar for either. An out-of-scope card cites its rule row — *"rule set
+   2026.08.01 carries an explicit rule row for New Hampshire with no
+   economic-nexus threshold"* — and the browser walkthrough asserts there is no
+   meter element in its DOM at all, not merely one at zero.
+
+   The walkthrough also caught the subtler half: the card's rule footer ends
+   *"…excluded from this threshold"*, which contradicted the card's own
+   headline on an out-of-scope jurisdiction. It is suppressed there now.
+
+2. **An unverified rule set renders a banner *instead of* the headline
+   counts**, not beside them. A summary line reading "3 crossed" next to a
+   caveat is still a summary line a seller will act on. This is the
+   presentation half of design §11; the engine's caller already marks such
+   determinations internal-only and suppresses their alerts, and the explainer
+   restates it for anyone who deep-links past the board.
+
+### The explainer
+
+`determination-explainer.tsx` renders the reproducibility triple verbatim, the
+half-open window with its end labelled *"up to, not including"*, the
+measurement timezone, the measured-vs-threshold pair with the rule's combining
+logic in words, and the raw `inputs` one disclosure away **exactly as stored**.
+
+Nothing on it is recomputed. A screen that recalculated the answer while
+claiming to explain it would be showing today's code rather than the decision.
+It also states `crossedOn` as *"the date this was first observed, not a legal
+determination of when it occurred"*, which is precisely what the engine means
+by it.
+
+There is no recalculate button and no edit affordance anywhere in the
+component, for the same reason there is no `setDetermination` in the SDK.
+
+### The storefront
+
+`src/app/nexara/` — public, session-free, handing off to the existing
+passwordless/OAuth login rather than growing a second credential path.
+
+Its copy lives in `src/components/nexara/storefront.ts` as data, and a test
+sweeps every user-visible string for claims the product does not support:
+filing, tax advice, calculating tax owed, guaranteeing compliance. The
+`NON_GOALS` strings are exempt because they are the disclaimer — they have to
+be allowed to name the thing they deny — and a test asserts that exemption is
+real, so the sweep cannot be trivially satisfied by deleting the disclaimers.
+The three non-goals are on the front page rather than in a contract.
+
+### The support view — capability, not page
+
+The milestone said to reuse "the platform's admin route group". There is no
+such thing: `admin-worker` has no service binding anywhere, no `api-edge`
+route, and the platform has **no staff identity** — the support role is a
+header claim from a trusted internal caller. Routing it to a browser today
+would mean either trusting a client-set header (a total tenancy break) or
+inventing a staff-identity primitive inside a feature milestone.
+
+So NX8 shipped the capability where the gate already is —
+`GET /v1/internal/support/organizations/:orgId/nexus` — read-only, audited,
+one org per query, no payloads, with a test that reads the sources and fails
+the build if a write, a second export, or a non-`GET` route ever appears.
+[`support-view.md`](./support-view.md) records the blocker and what the
+remaining page costs once the platform primitive lands (one page).
+
+### R10, closed — a seller names their own tax contact
+
+Migration `260_nexus_alert_contact` plus
+`GET`/`PUT`/`DELETE /v1/organizations/:orgId/nexus/alert-contact`, an SDK
+method trio, a CLI command, and a card on the exposure board.
+
+**The table lives in the `nexus` schema, not in `config` or `membership`.**
+Resolving org members' emails from the evaluation cron would mean either a
+second SQL surface on another context's tables — the exact failure the tenancy
+scan exists to prevent, arriving from the other direction — or a new
+cross-context route on two other workers, called by a job that has *no actor*
+to authorize as. A context owning its own notification target is the smaller
+thing, and the migration says so.
+
+**One row per org, and it is not a user reference.** The person who should read
+"you have crossed Texas" is often an accountant or a shared finance inbox;
+requiring a console login would push sellers to name their own address and then
+never read the alert. A list of recipients is a mailing list — a feature with
+its own semantics — and it upgrades from here without a rewrite: the primary
+key becomes a unique index and nothing else moves.
+
+**Three states, not two.** This is the part a two-way "set / unset" read would
+get wrong, and the wrong answer is a lie either way:
+
+| State | What the console says |
+|---|---|
+| contact set | "Alerts go to *address*" |
+| no contact, environment default exists | "Alerts are going to an address you did not choose" |
+| no contact, no default | "**No one is being told when you cross a threshold**" — and, immediately, that positions are still measured and recorded |
+
+`hasEnvironmentFallback` exists on the response for exactly this. A single null
+cannot distinguish the last two, and telling a seller their alerts are silent
+when they are not — or the reverse — is worse than telling them nothing.
+
+**The environment variable stays as a floor**, not as a competitor. An org that
+has not named a contact is exactly the org that has just started trading, which
+is exactly the org about to cross its first threshold. Precedence is: seller's
+contact → environment default → `no_recipient_configured` on the alert row. A
+*failed* contact lookup degrades to the default rather than aborting: the email
+is the recoverable half, the determination is not.
+
+### One correction the new tests forced
+
+`nexus-facade.ts` had claimed since NX4 that its position before `isOrgRoute`
+was load-bearing "because the org facade's pattern would otherwise swallow
+them", asserted "by a test rather than by a comment alone". There was no such
+test. Writing it disproved the claim: `org-facade` enumerates its paths exactly
+(`/members`, `/invitations`, `/api-keys`, the bare org id) and never matched a
+nexus route. The comment is corrected, and `nexus-facade.test.ts` now asserts
+the property that *is* worth protecting — the two facades claim disjoint sets,
+so a future catch-all in either fails a test instead of silently capturing the
+other's API.
+
+### Verification
+
+`scripts/nexus-walkthrough.mjs` drives connect → backfill → exposure →
+jurisdiction → ledger → registration → the §11 banner through a real browser
+with the edge intercepted, asserting 24 rendered properties and capturing nine
+screenshots. It is what caught the out-of-scope card contradicting itself in
+its own last line. It is **not in CI** — it needs Playwright, which this repo
+does not depend on — and its header says so. When NX9's demo tenant exists,
+pointing `BASE` at a deployed console and deleting the intercept block runs
+the same assertions against real data.
 
 ## As-built — NX7 (the Shopify adapter)
 
@@ -166,7 +381,8 @@ ask is the console, which does not exist until NX8. So NX5 ships the mechanism
 with a per-environment `NEXUS_ALERT_EMAIL` var, explicitly labelled a stopgap:
 when it is unset the alert row and the outgoing webhook still fire and the row
 records `notification_ref = 'no_recipient_configured'`. The gap is **queryable**
-rather than something a support ticket discovers. Carried as an NX8 follow-up.
+rather than something a support ticket discovers. **Closed in NX8** — see
+"R10, closed" below.
 
 ### Verification
 

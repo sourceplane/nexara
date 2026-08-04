@@ -44,6 +44,67 @@ function strFlag(flag: string | boolean | undefined): string | undefined {
   return typeof flag === "string" && flag.length > 0 ? flag : undefined;
 }
 
+// ── nexus alert-contact ──────────────────────────────────────
+
+/**
+ * `nexara nexus alert-contact` — read it; `--email` sets it; `--clear` removes it.
+ *
+ * The human output distinguishes three states, not two. "No contact" and "a
+ * contact you did not choose" are different facts, and an operator scripting
+ * a fleet check needs the difference: `configured` is fine, `fallback` is a
+ * seller who has not been asked yet, and `none` is a seller whose crossings
+ * reach nobody.
+ */
+export async function nexusAlertContactCommand(ctx: CommandContext): Promise<CommandResult> {
+  const orgId = await resolveOrgId(ctx, true);
+  const email = strFlag(ctx.flags["email"]);
+  const label = strFlag(ctx.flags["label"]);
+  const clear = ctx.flags["clear"] === true;
+
+  if (email && clear) {
+    throw new UsageError("--email and --clear are mutually exclusive");
+  }
+
+  const client = await ctx.sdk();
+  const response = email
+    ? { contact: (await client.exposure.setAlertContact(orgId, label === undefined ? { email } : { email, label })).contact, hasEnvironmentFallback: false }
+    : clear
+      ? await client.exposure.clearAlertContact(orgId)
+      : await client.exposure.getAlertContact(orgId);
+
+  if (ctx.outputMode === "json") {
+    ctx.stdout(formatOutput({ mode: "json", data: response }));
+    return { exitCode: 0 };
+  }
+
+  const state = response.contact
+    ? "configured"
+    : response.hasEnvironmentFallback
+      ? "environment_fallback"
+      : "none";
+
+  ctx.stdout(
+    formatOutput({
+      mode: "human",
+      record: {
+        state,
+        email: response.contact?.email ?? "—",
+        label: response.contact?.label ?? "—",
+        updated_at: response.contact?.updatedAt ?? "—",
+      },
+    }),
+  );
+  if (state === "none") {
+    // stderr, so a script piping stdout still sees the record while a human
+    // running it interactively cannot miss the one that matters.
+    ctx.stderr(
+      "! No alert contact and no environment fallback: threshold crossings for this " +
+        "organization are being recorded but are not reaching anyone.",
+    );
+  }
+  return { exitCode: 0 };
+}
+
 // ── nexus exposure ───────────────────────────────────────────
 
 export async function nexusExposureCommand(ctx: CommandContext): Promise<CommandResult> {

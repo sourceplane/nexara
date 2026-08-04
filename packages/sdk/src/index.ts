@@ -17,6 +17,7 @@ import { BillingClient } from "./billing.js";
 import { ConfigClient } from "./config.js";
 import { EnvironmentsClient } from "./environments.js";
 import { EventsClient } from "./events.js";
+import { ChannelsClient } from "./channels.js";
 import { ExposureClient, LedgerClient, RegistrationsClient } from "./nexus.js";
 import { MembershipsClient } from "./memberships.js";
 import { MeteringClient } from "./metering.js";
@@ -48,6 +49,8 @@ export class Nexara {
   readonly ledger: LedgerClient;
   /** Seller-owned registration state. */
   readonly registrations: RegistrationsClient;
+  /** Connected sales channels and the ingestion inbox. */
+  readonly channels: ChannelsClient;
   /** Underlying HTTP transport. Exposed for advanced extension. */
   readonly transport: Transport;
 
@@ -70,6 +73,7 @@ export class Nexara {
     this.exposure = new ExposureClient(this.transport);
     this.ledger = new LedgerClient(this.transport);
     this.registrations = new RegistrationsClient(this.transport);
+    this.channels = new ChannelsClient(this.transport);
   }
 }
 
@@ -114,6 +118,7 @@ export {
   RegistrationsClient,
   type ListLedgerQuery,
 } from "./nexus.js";
+export { ChannelsClient } from "./channels.js";
 
 // Transport surface.
 export {
@@ -181,7 +186,29 @@ export type {
   ListRegistrationsResponse,
   UpsertRegistrationRequest,
   UpsertRegistrationResponse,
+  PublicAlertContact,
+  GetAlertContactResponse,
+  SetAlertContactRequest,
+  SetAlertContactResponse,
 } from "@saas/contracts/nexus";
+
+export type {
+  ChannelProviderId,
+  ChannelStatus,
+  DeliveryStatus,
+  PublicChannel,
+  PublicChannelDelivery,
+  ListChannelsResponse,
+  ListDeliveriesResponse,
+  StartChannelConnectRequest,
+  StartChannelConnectResponse,
+  CompleteChannelConnectRequest,
+  CompleteChannelConnectResponse,
+  CreateManualChannelRequest,
+  CreateManualChannelResponse,
+  RevokeChannelResponse,
+  BackfillProgress,
+} from "@saas/contracts/channels";
 
 // Re-export contract types so consumers don't import `@saas/contracts` directly.
 export type {

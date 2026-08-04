@@ -271,6 +271,27 @@ export interface RegistrationRow {
   updatedAt: Date;
 }
 
+/**
+ * Where one org's threshold alerts go (R10).
+ *
+ * Not a reference to a user: the tax contact is frequently an accountant or a
+ * shared finance inbox, and requiring a console login would push sellers to
+ * use their own address and then never read the alert.
+ */
+export interface AlertContactRow {
+  orgId: string;
+  email: string;
+  label: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface UpsertAlertContactInput {
+  email: string;
+  label: string | null;
+  now: Date;
+}
+
 export interface UpsertRegistrationInput {
   id: string;
   jurisdiction: string;
@@ -393,6 +414,19 @@ export interface NexusRepository {
   // ── Registrations ──
   upsertRegistration(orgId: Uuid, input: UpsertRegistrationInput): Promise<NexusResult<RegistrationRow>>;
   listRegistrations(orgId: Uuid): Promise<NexusResult<RegistrationRow[]>>;
+
+  // ── Alert contact (R10) ──
+  /** Null when the seller has not named one; the caller falls back to the
+   *  environment default and records that it did. */
+  getAlertContact(orgId: Uuid): Promise<NexusResult<AlertContactRow | null>>;
+  upsertAlertContact(
+    orgId: Uuid,
+    input: UpsertAlertContactInput,
+  ): Promise<NexusResult<AlertContactRow>>;
+  /** Deleting the contact is a deliberate act, not an empty-string update —
+   *  it returns the org to the environment fallback, and that is a different
+   *  state from "set to nothing". */
+  deleteAlertContact(orgId: Uuid): Promise<NexusResult<boolean>>;
 
   // ── Alerts ──
   /** Gated by `nexus_alerts_once_idx`; a null value means "already sent". */

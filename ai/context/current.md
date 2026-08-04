@@ -21,7 +21,7 @@ append-only sale-event ledger fed by connected sales channels, aggregated per
 jurisdiction, evaluated against versioned rule data by a pure engine, and
 recorded as immutable, reproducible determinations.
 
-Status: **Ready — agreed and implementable, no code yet.** Read
+Status: **NX0–NX8 shipped; NX9 remains.** Read
 [`specs/epics/nexus/README.md`](../../specs/epics/nexus/README.md) first; the
 locked decisions are the `Decisions locked` row of its status table. Commercial
 date: **15 September 2026**.
@@ -56,10 +56,9 @@ date: **15 September 2026**.
 - ~~**NX5** — the hourly evaluation cron, change detection, and threshold
   alerts.~~ **Done.** Cron attached at `7 * * * *`. `nexus.threshold.crossed`
   needed no registry entry — `webhooks-worker` fans out every event type on the
-  log, so emitting it *is* the registration. **One gap carried to NX8:** the
-  alert recipient is a per-environment `NEXUS_ALERT_EMAIL` stopgap; a seller
-  naming their own tax contact needs a console to ask in. When unset the alert
-  row records `no_recipient_configured` rather than failing silently.
+  log, so emitting it *is* the registration. One gap was carried to NX8 and **closed there**: the
+  alert recipient was a per-environment `NEXUS_ALERT_EMAIL` stopgap; a seller
+  naming their own tax contact needed a console to ask in.
 - ~~**NX6** — `channels-worker` and the Stripe adapter.~~ **Done.** Q4, Q5,
   and Q6 are resolved in
   [`connector-gate.md`](../../specs/epics/nexus/connector-gate.md), which is
@@ -69,8 +68,26 @@ date: **15 September 2026**.
   parsed rather than multiplied; the §6.2 fallback level is recorded on every
   row; marketplace facilitation takes *either* signal, defaulting an unknown
   source to the seller's own sale.
-- **NX8 → NX9** — the console (including the R10 alert-contact resolution),
-  then the commercial surface and live verification.
+- ~~**NX8** — the console.~~ **Done.** Five org pages, the determination
+  explainer, a public storefront whose copy is swept by a test for claims the
+  product does not support, and **R10 closed**: migration `260` gives a seller
+  their own tax contact, with the environment variable demoted to a floor. The
+  board distinguishes three recipient states, not two — "nobody" and "somebody
+  you did not choose" are different facts. The support view shipped as an
+  audited read-only capability in `admin-worker` rather than a page: the
+  platform has no staff identity to authenticate a browser against, and the
+  blocker is written down in
+  [`support-view.md`](../../specs/epics/nexus/support-view.md).
+- **NX9** — the commercial surface. **Mostly done.** Plan limits are
+  entitlements on the existing plan codes (renaming a live code is a data
+  migration for no gain); the jurisdiction gate names the excess rather than
+  hiding it or dropping its ledger rows, and fails *open* on a billing outage.
+  `nexara demo seed` writes an 18-month deterministic ledger through the
+  product's own import API. `docs/architecture.md` and `docs/runbook.md` are in
+  the catalog. **Two things remain and both are blocked on something outside
+  the epic:** metered usage needs an internal seam on `metering-worker` (a
+  platform change, like the staff identity the support view needs), and live
+  verification needs the Supabase secret broker's `limit_reached` cleared.
 - Two questions to answer before they get expensive: who publishes and verifies
   rule sets (Q1), and whether the tenant is a seller or an accounting firm
   holding many sellers (Q2). Q4, Q5, and Q6 gate NX6. **R9** (a provider

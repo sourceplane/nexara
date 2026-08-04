@@ -36,6 +36,9 @@ const ALLOWED_INTERNAL_CALLERS: ReadonlySet<string> = new Set([
   "projects-worker",
   "membership-worker",
   "integrations-worker",
+  // nexus-worker checks limit.jurisdictions_monitored when assembling the
+  // exposure board (design §9).
+  "nexus-worker",
   // api-edge forwards verified-at-source-of-truth inbound provider webhooks
   // (it streams the raw body here; this worker verifies the signature).
   "api-edge",

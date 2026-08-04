@@ -38,4 +38,28 @@ describe("query cache keys (qk)", () => {
   it("webhook endpoint key carries both org and endpoint id", () => {
     expect(qk.webhookEndpoint("org_1", "ep_9")).toEqual(["webhookEndpoint", "org_1", "ep_9"]);
   });
+
+  it("nexus keys carry their scope so two jurisdictions never share a cache entry", () => {
+    expect(qk.jurisdiction("org_1", "US-TX")).toEqual(["jurisdiction", "org_1", "US-TX"]);
+    expect(qk.jurisdiction("org_1", "US-TX")).not.toEqual(qk.jurisdiction("org_1", "US-CA"));
+  });
+
+  it("a filtered ledger is a different resource from an unfiltered one", () => {
+    expect(qk.ledger("org_1", "")).not.toEqual(qk.ledger("org_1", "kind=refund"));
+  });
+
+  it("nexus keys do not collide with each other or with the platform keys", () => {
+    const org = "org_1";
+    const keys = [
+      qk.exposure(org),
+      qk.jurisdiction(org, "US-TX"),
+      qk.ledger(org, ""),
+      qk.channels(org),
+      qk.channelDeliveries(org),
+      qk.nexusRegistrations(org),
+      qk.projects(org),
+      qk.members(org),
+    ].map((k) => JSON.stringify(k));
+    expect(new Set(keys).size).toBe(keys.length);
+  });
 });

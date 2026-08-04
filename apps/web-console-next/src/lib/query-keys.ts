@@ -27,4 +27,13 @@ export const qk = {
   billingSummary: (orgId: string) => ["billingSummary", orgId] as const,
   entitlements: (orgId: string) => ["entitlements", orgId] as const,
   invoices: (orgId: string) => ["invoices", orgId] as const,
+  // Nexus. `jurisdiction` carries the code so two jurisdictions never share a
+  // cache entry, and `ledger` carries its filter signature for the same reason
+  // — a filtered list and an unfiltered one are different resources.
+  exposure: (orgId: string) => ["exposure", orgId] as const,
+  jurisdiction: (orgId: string, code: string) => ["jurisdiction", orgId, code] as const,
+  ledger: (orgId: string, filter: string) => ["ledger", orgId, filter] as const,
+  channels: (orgId: string) => ["channels", orgId] as const,
+  channelDeliveries: (orgId: string) => ["channelDeliveries", orgId] as const,
+  nexusRegistrations: (orgId: string) => ["nexusRegistrations", orgId] as const,
 };

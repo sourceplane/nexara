@@ -471,12 +471,36 @@ export interface PublicJurisdictionExposure {
   ruleSetVersion: string;
   /** False when the rule set behind this card is unverified (design §11). */
   ruleSetVerified: boolean;
+  /**
+   * True when this jurisdiction is beyond the org's plan limit (design §9).
+   *
+   * A locked card is **named but not measured**: its sale events are still
+   * ingested and still in the ledger, and the seller can see that they trade
+   * here — they simply do not get a determination until they upgrade. The
+   * three alternatives were each worse:
+   *
+   *   * refusing the ledger row costs the seller their own history, and no
+   *     later upgrade can repair it;
+   *   * erroring the board hides the jurisdictions they *are* entitled to;
+   *   * hiding the excess entirely means a compliance product concealing that
+   *     a seller trades into a state, which is the thing it exists to surface.
+   *
+   * When true, `status`, `measuredSalesCents` and `fractionOfThreshold` carry
+   * no measurement and the console renders an upgrade prompt in their place.
+   */
+  locked: boolean;
 }
 
 export interface ListExposureResponse {
   exposure: PublicJurisdictionExposure[];
   /** The rule set the board was computed against. */
   ruleSet: PublicRuleSet;
+  /**
+   * How many jurisdictions this org's plan monitors, or null for unlimited
+   * (design §9). Present so the console can explain a locked card with the
+   * actual number rather than a generic "upgrade" nag.
+   */
+  monitoredLimit: number | null;
 }
 
 export interface GetJurisdictionResponse {
@@ -549,6 +573,42 @@ export interface PublicAlert {
 
 export interface ListAlertsResponse {
   alerts: PublicAlert[];
+}
+
+/**
+ * Where this org's threshold alerts go (R10).
+ *
+ * Deliberately not a user id. The person who should read "you have crossed
+ * Texas" is often an accountant or a shared finance inbox rather than a
+ * console user, and requiring a login would push sellers to name their own
+ * address and then never read it.
+ */
+export interface PublicAlertContact {
+  email: string;
+  /** A seller-chosen label — "our bookkeeper". Never used for routing. */
+  label: string | null;
+  updatedAt: string;
+}
+
+export interface GetAlertContactResponse {
+  /** Null when none is set; alerts then fall back to the environment default
+   *  and the alert row records that they did. */
+  contact: PublicAlertContact | null;
+  /**
+   * True when an environment-level fallback exists, so the console can say
+   * "alerts are going somewhere, just not somewhere you chose" rather than
+   * implying silence.
+   */
+  hasEnvironmentFallback: boolean;
+}
+
+export interface SetAlertContactRequest {
+  email: string;
+  label?: string | null;
+}
+
+export interface SetAlertContactResponse {
+  contact: PublicAlertContact;
 }
 
 // ── Event types ──────────────────────────────────────────────

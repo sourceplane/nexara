@@ -163,11 +163,18 @@ repo:
     - supabase
   links:
     - { title: Product overview, url: docs/overview.md }
+    - { title: Architecture, url: docs/architecture.md }
+    - { title: Runbook, url: docs/runbook.md }
     - { title: nexus epic, url: specs/epics/nexus/README.md }
     - { title: Technical design, url: specs/epics/nexus/design.md }
   docs:
     overview: docs/overview.md
     pages:
+      # The product's own architecture and runbook lead: they are what a new
+      # engineer and a new operator respectively need, and they describe the
+      # system as built rather than as designed.
+      - { path: docs/architecture.md, role: architecture, title: Architecture }
+      - { path: docs/runbook.md, role: runbook, title: Product runbook }
       - { path: specs/epics/nexus/design.md, role: architecture, title: nexus — technical design }
-      - { path: ai/context/operations.md, role: runbook, title: Operating contract }
+      - { path: ai/context/operations.md, role: runbook, title: Platform operating contract }
       - { path: ai/context/deployment.md, role: reference, title: Live deployment manifest }
