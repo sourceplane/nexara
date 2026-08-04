@@ -14,10 +14,66 @@
 | NX3 | **Done** | Aggregation, ledger append, tenant-scoping CI scan |
 | NX4 | **Done** | `nexus-worker` + edge facade + SDK + CLI |
 | NX5 | **Done** | Evaluation cron, determinations, alerts |
-| NX6 | Not started | `channels-worker` + Stripe |
+| NX6 | **Done** | `channels-worker` + Stripe; Q4/Q5/Q6 resolved in `connector-gate.md` |
 | NX7 | Not started | Shopify adapter |
 | NX8 | Not started | Console |
 | NX9 | Not started | Entitlements, demo tenant, docs, verification |
+
+## As-built — NX6 (channels-worker and Stripe)
+
+Gated on Q4, Q5, and Q6; all three are answered in
+[`connector-gate.md`](./connector-gate.md) before any of this was written.
+
+- `apps/channels-worker` — the provider seam, the registry, the Stripe adapter,
+  signed single-use connect state, the credential envelope, the drain
+  (cron `* * * * *`), and the staleness module.
+- `packages/db/src/channels/` — the second SQL surface, for
+  `nexus.channels` writes and `nexus.inbound_deliveries`.
+- `apps/api-edge` — `isChannelIngressRoute` matched **before** the
+  authenticated facade, and `CHANNELS_WORKER` bound alongside `NEXUS_WORKER`.
+- `tests/channels-worker` — 39 tests.
+
+### The gate's three answers, in one line each
+
+- **Q4** — the baseline is the channel's own **median** interval × 6, floored
+  at 24h and capped at three weeks. A ten-orders-a-day seller is flagged after
+  a silent day; a one-order-a-week seller is not nagged. The median rather than
+  the mean because order intervals are heavily skewed and the mean is dominated
+  by a Black Friday burst.
+- **Q5** — **no** session-scoped Postgres mechanism is safe under Hyperdrive
+  pooling, and the one transaction-scoped mechanism that is (`SET LOCAL`) costs
+  a transaction wrapper on every read for a guard that only fires after the CI
+  scan has already failed. The belt-and-braces Q5 wanted arrived from a
+  different direction: NX1.5's composite foreign keys make a cross-tenant
+  *write* impossible. Q5 closes; R6 stays as a standing risk.
+- **Q6** — payload purged 7 days after `applied`, 30 after terminal `failed`.
+  The row is the dedupe **receipt** and the payload is the **PII**, so purging
+  nulls the payload and keeps the row; deleting it would let a redelivery after
+  the window be re-applied and double-counted.
+
+### The seam, tested rather than asserted
+
+Design §6.3's acceptance criterion — a backfill page overlapping a live
+delivery for the same charge produces one ledger row — is driven through the
+**real drain** against an in-memory Postgres stand-in that implements
+`ON CONFLICT DO NOTHING` honestly, including transaction rollback. Asserting it
+about the index alone would test the schema; this tests the pipeline.
+
+### The only new trust path
+
+`POST /v1/channels/:provider/webhook` is matched before the authenticated
+facade and dispatched without `resolveActor`. Four properties are enforced in
+order and each has a test: the **raw bytes** are verified (re-serialising a
+parsed body changes them); an unsigned delivery **never reaches the inbox**;
+a duplicate returns 200 and does nothing; and every rejection returns the
+**same shape**, because the difference between "bad signature" and "unknown
+provider" is an oracle for someone probing which provider a tenant uses.
+
+Three drain queries are necessarily un-scoped and each carries a
+`tenancy-exempt: pre-attribution-inbox` marker at its call site — including the
+attribution lookup, which was briefly reached for by a cast and is now declared
+on the repository interface so the scan sees it and a reviewer can argue with
+it.
 
 ## As-built — NX5 (evaluation, determinations, alerts)
 

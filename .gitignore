@@ -34,5 +34,6 @@ apps/admin-worker/wrangler.jsonc
 apps/integrations-worker/wrangler.jsonc
 apps/webhooks-worker/wrangler.jsonc
 apps/nexus-worker/wrangler.jsonc
+apps/channels-worker/wrangler.jsonc
 baseline/
 .orun/

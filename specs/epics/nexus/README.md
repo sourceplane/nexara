@@ -13,7 +13,7 @@ penalties later. Nexara watches the line and says so on the day it is crossed.
 
 | Field | Value |
 |-------|-------|
-| Status | **In delivery** — NX0–NX5 have landed on `main`. NX6 opens on Q4–Q6; NX7–NX9 follow |
+| Status | **In delivery** — NX0–NX6 have landed on `main`. Q4–Q6 are resolved in [`connector-gate.md`](./connector-gate.md); NX7–NX9 follow |
 | Cluster | **NX** (NX0–NX9, plus the NX1.5 review gate) — the first *product* bounded context on this starter |
 | Owner(s) | new `apps/nexus-worker`, new `apps/channels-worker`, `apps/api-edge`, `packages/{contracts,policy-engine,db,sdk,cli}`, `apps/web-console-next` |
 | Target branch | `main` |
@@ -54,10 +54,12 @@ measured, and the code version that decided — re-run it yourself."*
    acceptance criteria.
 4. [`risks-and-open-questions.md`](./risks-and-open-questions.md) — what could
    make this wrong, and what is still undecided.
-5. [`schema-review.md`](./schema-review.md) — the NX1.5 gate's findings, each
+5. [`connector-gate.md`](./connector-gate.md) — Q4, Q5, and Q6 resolved, which
+   is what opened NX6.
+6. [`schema-review.md`](./schema-review.md) — the NX1.5 gate's findings, each
    with a severity and a disposition. NX3 did not open until every one was
    closed or accepted in writing.
-6. [`IMPLEMENTATION-STATUS.md`](./IMPLEMENTATION-STATUS.md) — as-built record.
+7. [`IMPLEMENTATION-STATUS.md`](./IMPLEMENTATION-STATUS.md) — as-built record.
 
 ## Milestones at a glance
 
@@ -70,7 +72,7 @@ measured, and the code version that decided — re-run it yourself."*
 | NX3 | Aggregation + ledger: `@saas/db/nexus` repository, the single-scan jurisdiction aggregate, dedupe-constrained append | **Done** |
 | NX4 | `nexus-worker` + edge + SDK + CLI: exposure, jurisdiction detail, evaluate, ledger import | **Done** |
 | NX5 | Evaluation cron, immutable determinations, threshold alerts (notifications + events + outgoing webhook type) | **Done** |
-| NX6 | `channels-worker`: provider seam, inbound inbox + drain, Stripe adapter, backfill/live-sync sequencing | Ready — gated on Q4–Q6 |
+| NX6 | `channels-worker`: provider seam, inbound inbox + drain, Stripe adapter, backfill/live-sync sequencing | **Done** |
 | NX7 | Shopify adapter: ship-to jurisdiction resolution + marketplace-facilitator identification | Ready |
 | NX8 | Console: exposure board, jurisdiction detail + determination explainer, ledger, channels, registrations, read-only support view, storefront | Ready |
 | NX9 | Commercial + evidence: metered plans and entitlements, seeded demo tenant, docs/catalog, stage + prod verification | Ready |

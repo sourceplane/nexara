@@ -101,6 +101,10 @@
         {
           "binding": "NEXUS_WORKER",
           "service": "nexara-nexus-worker-stage"
+        },
+        {
+          "binding": "CHANNELS_WORKER",
+          "service": "nexara-channels-worker-stage"
         }
       ],
       "durable_objects": {
@@ -174,6 +178,10 @@
         {
           "binding": "NEXUS_WORKER",
           "service": "nexara-nexus-worker-prod"
+        },
+        {
+          "binding": "CHANNELS_WORKER",
+          "service": "nexara-channels-worker-prod"
         }
       ],
       "durable_objects": {

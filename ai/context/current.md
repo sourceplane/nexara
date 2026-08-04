@@ -60,8 +60,13 @@ date: **15 September 2026**.
   alert recipient is a per-environment `NEXUS_ALERT_EMAIL` stopgap; a seller
   naming their own tax contact needs a console to ask in. When unset the alert
   row records `no_recipient_configured` rather than failing silently.
-- **NX6 → NX9** — the connectors, then the console and the commercial surface.
-  NX6 still opens on Q4, Q5, and Q6.
+- ~~**NX6** — `channels-worker` and the Stripe adapter.~~ **Done.** Q4, Q5,
+  and Q6 are resolved in
+  [`connector-gate.md`](../../specs/epics/nexus/connector-gate.md), which is
+  what opened the milestone. The backfill/live seam is tested through the real
+  drain, not asserted about the index.
+- **NX7 → NX9** — the Shopify adapter, the console, then the commercial
+  surface and live verification.
 - Two questions to answer before they get expensive: who publishes and verifies
   rule sets (Q1), and whether the tenant is a seller or an accounting firm
   holding many sellers (Q2). Q4, Q5, and Q6 gate NX6. **R9** (a provider

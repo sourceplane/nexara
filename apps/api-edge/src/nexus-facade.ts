@@ -17,6 +17,13 @@ const EVALUATE_RE = /^\/v1\/organizations\/[^/]+\/nexus\/evaluate$/;
 const LEDGER_RE = /^\/v1\/organizations\/[^/]+\/ledger$/;
 const LEDGER_IMPORT_RE = /^\/v1\/organizations\/[^/]+\/ledger\/import$/;
 const REGISTRATIONS_RE = /^\/v1\/organizations\/[^/]+\/registrations$/;
+const CHANNELS_RE = /^\/v1\/organizations\/[^/]+\/channels$/;
+const CHANNEL_ID_RE = /^\/v1\/organizations\/[^/]+\/channels\/[^/]+$/;
+const CHANNEL_CONNECT_RE = /^\/v1\/organizations\/[^/]+\/channels\/connect(\/complete)?$/;
+const CHANNEL_DELIVERIES_RE = /^\/v1\/organizations\/[^/]+\/channels\/deliveries$/;
+
+/** The signature-verified provider ingress. No session; see below. */
+const CHANNEL_WEBHOOK_RE = /^\/v1\/channels\/[^/]+\/webhook$/;
 
 const FORWARDED_HEADERS = [
   "content-type",
@@ -34,7 +41,69 @@ const ROUTES: Array<{ re: RegExp; methods: ReadonlySet<string> }> = [
   { re: LEDGER_IMPORT_RE, methods: new Set(["POST"]) },
   { re: LEDGER_RE, methods: new Set(["GET"]) },
   { re: REGISTRATIONS_RE, methods: new Set(["GET", "PUT"]) },
+  // Order matters: the literal sub-paths before CHANNEL_ID_RE, or
+  // `/channels/connect` is read as a channel whose id is "connect".
+  { re: CHANNEL_CONNECT_RE, methods: new Set(["POST"]) },
+  { re: CHANNEL_DELIVERIES_RE, methods: new Set(["GET"]) },
+  { re: CHANNELS_RE, methods: new Set(["GET", "POST"]) },
+  { re: CHANNEL_ID_RE, methods: new Set(["DELETE"]) },
 ];
+
+/** Routes served by `channels-worker` rather than `nexus-worker`. */
+const CHANNEL_ROUTES = [
+  CHANNEL_CONNECT_RE, CHANNEL_DELIVERIES_RE, CHANNELS_RE, CHANNEL_ID_RE,
+];
+
+function isChannelRoute(pathname: string): boolean {
+  return CHANNEL_ROUTES.some((re) => re.test(pathname));
+}
+
+/**
+ * The provider webhook ingress.
+ *
+ * Matched **before** the authenticated facade and dispatched without
+ * `resolveActor`: provider webhooks carry a signature, not a session, and
+ * `verifyInboundSignature` in `channels-worker` is the gate. This is the only
+ * new trust path in the epic.
+ */
+export function isChannelIngressRoute(pathname: string): boolean {
+  return CHANNEL_WEBHOOK_RE.test(pathname);
+}
+
+export async function handleChannelIngressRoute(
+  request: Request,
+  env: Env,
+  requestId: string,
+  pathname: string,
+): Promise<Response> {
+  if (request.method !== "POST") {
+    return errorResponse("unsupported", "Method not allowed", 405, requestId);
+  }
+  if (!env.CHANNELS_WORKER) {
+    return errorResponse("internal_error", "Channels service unavailable", 503, requestId);
+  }
+
+  // The raw body is forwarded untouched. Every provider signs the bytes as
+  // sent, and any re-serialisation here would break every signature for
+  // reasons that look like a key problem.
+  const headers = new Headers(request.headers);
+  headers.set("x-request-id", requestId);
+
+  try {
+    const target = new URL(pathname, "https://channels.internal");
+    const downstream = await env.CHANNELS_WORKER.fetch(target.toString(), {
+      method: "POST",
+      headers,
+      body: request.body,
+    });
+    return new Response(downstream.body, {
+      status: downstream.status,
+      headers: downstream.headers,
+    });
+  } catch {
+    return errorResponse("internal_error", "Channels service unavailable", 503, requestId);
+  }
+}
 
 export function isNexusRoute(pathname: string): boolean {
   return ROUTES.some((r) => r.re.test(pathname));
@@ -58,7 +127,8 @@ export async function handleNexusRoute(
     if (!env.IDENTITY_WORKER) {
       return errorResponse("internal_error", "Authentication service unavailable", 503, requestId);
     }
-    if (!env.NEXUS_WORKER) {
+    const downstreamBinding = isChannelRoute(pathname) ? env.CHANNELS_WORKER : env.NEXUS_WORKER;
+    if (!downstreamBinding) {
       return errorResponse("internal_error", "Nexus service unavailable", 503, requestId);
     }
 
@@ -83,7 +153,10 @@ export async function handleNexusRoute(
     }
 
     const url = new URL(request.url);
-    const target = new URL(pathname + url.search, "https://nexus.internal");
+    const target = new URL(
+      pathname + url.search,
+      isChannelRoute(pathname) ? "https://channels.internal" : "https://nexus.internal",
+    );
 
     const init: RequestInit = { method: request.method, headers };
     if (request.method === "POST" || request.method === "PUT") {
@@ -92,7 +165,7 @@ export async function handleNexusRoute(
 
     try {
       const downstream = await timings.measure("edge_downstream", () =>
-        env.NEXUS_WORKER!.fetch(target.toString(), init),
+        downstreamBinding.fetch(target.toString(), init),
       );
       const res = new Response(downstream.body, {
         status: downstream.status,

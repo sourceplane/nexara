@@ -138,9 +138,9 @@ than tracking the account default.
 | Q1 | Who publishes and verifies rule sets, at what cadence, from which primary sources? | any `verified = true` environment | product |
 | Q2 | Is the tenant a seller, or an accounting firm holding many sellers? The org/sub-org shape differs, and the Firm plan (design §9) presumes the latter. | NX9 plan modelling | product |
 | Q3 | Do digital-goods sourcing rules belong in v1? Sharpened by the international rows, which exist precisely for non-resident *digital services* sellers — a seller with no shipping address anywhere. | R4 — **not** NX1; see below | product |
-| Q4 | What is the volume-aware staleness baseline for a channel? | R3, NX6 | engineering |
-| Q5 | Is any Postgres-side isolation reachable under Hyperdrive pooling? | R6 | engineering — spike before NX6 |
-| Q6 | Retention: how long is the raw `inbound_deliveries` payload kept? It contains customer PII and is only needed until the delivery is applied. | NX6 | product + engineering |
+| Q4 | ~~What is the volume-aware staleness baseline for a channel?~~ **Resolved** at NX6: the channel's own median interval × 6, floored at 24h, capped at three weeks ([`connector-gate.md`](./connector-gate.md)). | R3, NX6 | engineering |
+| Q5 | ~~Is any Postgres-side isolation reachable under Hyperdrive pooling?~~ **Resolved** at NX6: no, and it matters less than when the question was asked — NX1.5's composite FKs already make a cross-tenant *write* impossible. R6 stays as a standing risk. | R6 | engineering |
+| Q6 | ~~Retention: how long is the raw `inbound_deliveries` payload kept?~~ **Resolved** at NX6: 7 days after `applied`, 30 after terminal `failed`; the payload is nulled and the dedupe receipt kept. Per-tenant retention stays a product decision and is implementable without a migration. | NX6 | product + engineering |
 
 **Q3 does not block NX1**, and this is worth stating because it looks like it
 should. Digital-goods sourcing would enter the schema as an additional column on

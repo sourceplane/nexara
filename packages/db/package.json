@@ -21,6 +21,7 @@
     "./support": "./src/support/index.ts",
     "./integrations": "./src/integrations/index.ts",
     "./nexus": "./src/nexus/index.ts",
+    "./channels": "./src/channels/index.ts",
     "./runner": "./src/runner/index.ts"
   },
   "bin": {
