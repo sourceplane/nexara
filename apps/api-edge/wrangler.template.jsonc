@@ -1,0 +1,181 @@
+// Rendered to wrangler.jsonc by tooling/wire/render.mjs (BF6 deploy-time wiring).
+// Resource IDs are NEVER committed: @@wiring(<component>/<env>:<key>)@@ tokens are
+// resolved from AWS Secrets Manager at deploy time (wire-live) or from the
+// committed wiring.fixture.json for offline dry-runs (wire-fixture).
+{
+  "name": "nexara-api-edge",
+  "compatibility_date": "2025-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/index.ts",
+  "minify": false,
+  "vars": {
+    "ENVIRONMENT": "local",
+    "CONSOLE_CUSTOM_DOMAIN": "",
+    // M0 / Solo profile (Nexara ships single-user). Set "false" to restore the
+    // full multi-tenant baseline. See specs/profiles/solo-m0.md.
+    "SOLO_MODE": "true"
+  },
+  "durable_objects": {
+    "bindings": [
+      { "name": "RATE_LIMITER_DO", "class_name": "RateLimiterDO" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["RateLimiterDO"] }
+  ],
+  "env": {
+    "dev": {
+      "vars": {
+        "ENVIRONMENT": "dev",
+        "CONSOLE_CUSTOM_DOMAIN": "",
+        "SOLO_MODE": "true"
+      },
+      "durable_objects": {
+        "bindings": [
+          { "name": "RATE_LIMITER_DO", "class_name": "RateLimiterDO" }
+        ]
+      },
+      "migrations": [
+        { "tag": "v1", "new_sqlite_classes": ["RateLimiterDO"] }
+      ]
+    },
+    "stage": {
+      "vars": {
+        "ENVIRONMENT": "stage",
+        "CONSOLE_CUSTOM_DOMAIN": "stage.nexara.dev",
+        "SOLO_MODE": "true"
+      },
+      "hyperdrive": [
+        {
+          "binding": "PLATFORM_DB",
+          "id": "@@wiring(cloudflare-hyperdrive/stage:hyperdrive_id)@@"
+        }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "IDEMPOTENCY_KV",
+          "id": "@@wiring(cloudflare-kv/stage:api_edge_idempotency_kv_id)@@"
+        }
+      ],
+      "services": [
+        {
+          "binding": "IDENTITY_WORKER",
+          "service": "nexara-identity-worker-stage"
+        },
+        {
+          "binding": "MEMBERSHIP_WORKER",
+          "service": "nexara-membership-worker-stage"
+        },
+        {
+          "binding": "PROJECTS_WORKER",
+          "service": "nexara-projects-worker-stage"
+        },
+        {
+          "binding": "EVENTS_WORKER",
+          "service": "nexara-events-worker-stage"
+        },
+        {
+          "binding": "CONFIG_WORKER",
+          "service": "nexara-config-worker-stage"
+        },
+        {
+          "binding": "WEBHOOKS_WORKER",
+          "service": "nexara-webhooks-worker-stage"
+        },
+        {
+          "binding": "METERING_WORKER",
+          "service": "nexara-metering-worker-stage"
+        },
+        {
+          "binding": "BILLING_WORKER",
+          "service": "nexara-billing-worker-stage"
+        },
+        {
+          "binding": "NOTIFICATIONS_WORKER",
+          "service": "nexara-notifications-worker-stage"
+        },
+        {
+          "binding": "INTEGRATIONS_WORKER",
+          "service": "nexara-integrations-worker-stage"
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          { "name": "RATE_LIMITER_DO", "class_name": "RateLimiterDO" }
+        ]
+      },
+      "migrations": [
+        { "tag": "v1", "new_sqlite_classes": ["RateLimiterDO"] }
+      ]
+    },
+    "prod": {
+      "vars": {
+        "ENVIRONMENT": "prod",
+        "CONSOLE_CUSTOM_DOMAIN": "prod.nexara.dev",
+        "SOLO_MODE": "true"
+      },
+      "hyperdrive": [
+        {
+          "binding": "PLATFORM_DB",
+          "id": "@@wiring(cloudflare-hyperdrive/prod:hyperdrive_id)@@"
+        }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "IDEMPOTENCY_KV",
+          "id": "@@wiring(cloudflare-kv/prod:api_edge_idempotency_kv_id)@@"
+        }
+      ],
+      "services": [
+        {
+          "binding": "IDENTITY_WORKER",
+          "service": "nexara-identity-worker-prod"
+        },
+        {
+          "binding": "MEMBERSHIP_WORKER",
+          "service": "nexara-membership-worker-prod"
+        },
+        {
+          "binding": "PROJECTS_WORKER",
+          "service": "nexara-projects-worker-prod"
+        },
+        {
+          "binding": "EVENTS_WORKER",
+          "service": "nexara-events-worker-prod"
+        },
+        {
+          "binding": "CONFIG_WORKER",
+          "service": "nexara-config-worker-prod"
+        },
+        {
+          "binding": "WEBHOOKS_WORKER",
+          "service": "nexara-webhooks-worker-prod"
+        },
+        {
+          "binding": "METERING_WORKER",
+          "service": "nexara-metering-worker-prod"
+        },
+        {
+          "binding": "BILLING_WORKER",
+          "service": "nexara-billing-worker-prod"
+        },
+        {
+          "binding": "NOTIFICATIONS_WORKER",
+          "service": "nexara-notifications-worker-prod"
+        },
+        {
+          "binding": "INTEGRATIONS_WORKER",
+          "service": "nexara-integrations-worker-prod"
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          { "name": "RATE_LIMITER_DO", "class_name": "RateLimiterDO" }
+        ]
+      },
+      "migrations": [
+        { "tag": "v1", "new_sqlite_classes": ["RateLimiterDO"] }
+      ]
+    }
+  }
+}
