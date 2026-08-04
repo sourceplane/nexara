@@ -10,7 +10,7 @@
 | NX0 | **Done** | Charter landed; repo + catalog reframed to Nexara; `docs/overview.md` is the front page |
 | NX1 | **Done** | Contracts, migrations `200`–`240`, RBAC actions |
 | NX1.5 | **Done** | Gate — 12 findings; 8 fixed, 4 accepted in writing ([`schema-review.md`](./schema-review.md)) |
-| NX2 | Not started | Determination engine + boundary and reproducibility tests |
+| NX2 | **Done** | Determination engine + boundary, purity, and reproducibility tests |
 | NX3 | Not started | Aggregation, ledger append, tenant-scoping CI scan |
 | NX4 | Not started | `nexus-worker` + edge facade + SDK + CLI |
 | NX5 | Not started | Evaluation cron, determinations, alerts |
@@ -18,6 +18,70 @@
 | NX7 | Not started | Shopify adapter |
 | NX8 | Not started | Console |
 | NX9 | Not started | Entitlements, demo tenant, docs, verification |
+
+## As-built — NX2 (the determination engine)
+
+The pure core, landed before any I/O exists. `apps/nexus-worker` is created
+here as a plain workspace package — **no `component.yaml` and no wrangler
+template yet**, because it is not a worker until NX4 gives it a `fetch`
+handler, and declaring a Cloudflare component that cannot deploy would put a
+permanently red lane in the convergence.
+
+- `apps/nexus-worker/src/engine/` — `dates.ts` (civil-date arithmetic),
+  `zones.ts` (the *only* instant ⇄ jurisdiction-date conversion in the
+  codebase), `periods.ts`, `measure.ts`, `threshold.ts`, `deadline.ts`, and the
+  barrel exporting `ENGINE_VERSION = "1.0.0"`, `evaluate`, and
+  `evaluateSegmented`.
+- `tests/nexus-worker/` — a new verify-only component. 144 tests across six
+  suites.
+
+### The eight §5.3 boundaries, each with a named test
+
+| # | Boundary | Where |
+|---|----------|-------|
+| 1 | Half-open rolling window, never `BETWEEN` | `engine-periods.test.ts` |
+| 2 | The previous-calendar-year discontinuity across New Year | `engine-periods.test.ts` |
+| 3 | A mid-window rule change splits the window | `engine-boundaries.test.ts` |
+| 4 | UTC storage vs the jurisdiction's date (31 Dec 23:00 PST) | `engine-periods.test.ts` |
+| 5 | A refund landing in a later period than its sale | `engine-boundaries.test.ts` |
+| 6 | `threshold_logic='both'` with only sales crossing | `engine-threshold.test.ts` |
+| 7 | Marketplace treatment flipping the outcome on one ledger | `engine-threshold.test.ts` |
+| 8 | `threshold_logic='none'` terminal on a ledger with real sales | `engine-threshold.test.ts` |
+
+### Three decisions the design left open
+
+1. **The rolling window is `[D − 12 months + 1 day, D + 1 day)`** in the
+   jurisdiction's calendar — exactly twelve months of days, ending today
+   *inclusive*. `[D − 12 months, D)` excludes today, and a product whose
+   promise is "says so on the day it is crossed" cannot measure a window that
+   ends yesterday.
+2. **The comparator is `>=`** ("meets or exceeds"). Statutes split between
+   "exceeds" and "or more" and the schema carries no per-rule comparator; `>=`
+   is the conservative direction for a monitoring product. Pinned by
+   `ENGINE_VERSION`; making it per-rule data is a named follow-on rather than a
+   silent edit.
+3. **`fractionOfThreshold` reports whichever threshold binds** — the max under
+   `either` (you cross as soon as one does), the min under `both` (you cross
+   only when both do). Reporting the max under `both` would show a meter at
+   250% next to a status of `clear`, which reads as a product bug rather than
+   as the rule doing its job.
+
+### Verification
+
+- 144 tests pass. `engine-purity.test.ts` reads the engine sources and fails
+  any non-type import, any `@saas/db`/`fetch`/`Env`/`process.env` reference,
+  any `Date.now()`/`new Date()`/`Math.random()`, and any `async`/`await`/
+  `Promise` — turning design §4's purity conventions from a claim into a
+  control.
+- `reproducibility.test.ts` carries four frozen vectors shaped like stored
+  `nexus.determinations` rows (crossed, approaching, no_obligation, and a
+  year-boundary case where `crossedOn` differs from `asOf`'s UTC date). Each
+  asserts `status`, `crossedOn`, `registrationDueOn`, and the measured values
+  re-derive identically, that repeated evaluation is byte-identical, and that
+  the engine does not mutate the `inputs` object it will write to the row.
+- **Mutation-checked.** Three deliberate mutations — `>=` → `>`, dropping the
+  rolling window's `+1 day`, and ignoring `marketplace_treatment: exclude` —
+  each killed four tests. The suite is not vacuous.
 
 ## As-built — NX1.5 (the schema and isolation review gate)
 
