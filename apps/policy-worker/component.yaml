@@ -57,3 +57,5 @@ spec:
     surface: policy
     runtime: cloudflare
 # ci: trigger full-component verification (orun v2.12.0 upgrade — PR #183)
+# ci: attempt 2 after a failed convergence (20260804T071458Z)
+# ci: attempt 3 after a failed convergence (20260804T071659Z)

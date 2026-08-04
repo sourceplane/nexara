@@ -81,3 +81,5 @@ spec:
     surface: billing
     runtime: cloudflare
 # ci: re-trigger deploy (batch A — runner-starvation recovery 20260622T115650Z)
+# ci: attempt 2 after a failed convergence (20260804T071458Z)
+# ci: attempt 3 after a failed convergence (20260804T071659Z)

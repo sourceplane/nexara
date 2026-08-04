@@ -85,3 +85,5 @@ spec:
     surface: identity
     runtime: cloudflare
 # ci: re-trigger deploy (batch B — membership-dependents, 20260622T140838Z)
+# ci: attempt 2 after a failed convergence (20260804T071458Z)
+# ci: attempt 3 after a failed convergence (20260804T071659Z)
