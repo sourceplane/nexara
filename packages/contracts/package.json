@@ -23,6 +23,8 @@
     "./billing": "./src/billing.ts",
     "./notifications": "./src/notifications.ts",
     "./integrations": "./src/integrations.ts",
+    "./nexus": "./src/nexus.ts",
+    "./channels": "./src/channels.ts",
     "./idempotency": "./src/idempotency.ts"
   },
   "scripts": {

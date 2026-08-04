@@ -64,7 +64,7 @@ review gate's only artefact, and NX3 does not open without it.
 | ID | Milestone | Status |
 |----|-----------|--------|
 | NX0 | Product identity: repo + catalog framing from "starter" to Nexara; this epic doc set | **Done** |
-| NX1 | Contracts + schema: `@saas/contracts/{nexus,channels}`, migrations `200`–`240`, RBAC actions | Ready |
+| NX1 | Contracts + schema: `@saas/contracts/{nexus,channels}`, migrations `200`–`240`, RBAC actions | **Done** |
 | NX1.5 | **Gate** — adversarial schema + tenant-isolation review, written findings, before anything is built on the schema | Ready |
 | NX2 | Determination engine: pure `engine/{periods,measure,threshold,deadline}`, exhaustively unit-tested without a database | Ready |
 | NX3 | Aggregation + ledger: `@saas/db/nexus` repository, the single-scan jurisdiction aggregate, dedupe-constrained append | Ready |

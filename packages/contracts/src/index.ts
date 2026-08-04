@@ -16,3 +16,5 @@ export * from "./metering.js";
 export * from "./billing.js";
 export * from "./notifications.js";
 export * from "./integrations.js";
+export * from "./nexus.js";
+export * from "./channels.js";

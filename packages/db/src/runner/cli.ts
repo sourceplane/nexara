@@ -68,7 +68,10 @@ function parseArgs(argv: string[]): ParsedArgs {
 
 async function resolveAdapter(
   mode: RunMode,
-  env: string,
+  // Kept in the signature (and passed by main) because the environment is what
+  // a reader expects to select the adapter; it does not, because the wired
+  // credentials are already environment-scoped by the orun secret lease.
+  _env: string,
 ): Promise<MigrationAdapter | null> {
   if (mode === "plan") {
     return null;

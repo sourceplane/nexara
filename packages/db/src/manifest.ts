@@ -183,5 +183,50 @@ export const manifest: MigrationManifest = {
       description:
         "Connection pointer on the inbound-delivery inbox (nullable connection_id + partial index) — lets the per-connection delivery log scope precisely; attributed by the IG2 cron drain",
     },
+    {
+      id: "200_nexus_core",
+      context: "nexus",
+      path: "200_nexus_core/up.sql",
+      checksum:
+        "2dfe062217b3ee7f840708e971e20b66c30fcc8297137de8f6935376602ea4b5",
+      description:
+        "Nexus persistence foundation (NX1) — connected sales channels and the append-only sale-event ledger, with the dedupe unique index that IS the idempotency guarantee and the single-scan aggregation index",
+    },
+    {
+      id: "210_nexus_ingestion",
+      context: "channels",
+      path: "210_nexus_ingestion/up.sql",
+      checksum:
+        "8b66a3424ef60d06ff51447b4834d99cf81b9e8c4d58ec50070797540d8c6a17",
+      description:
+        "Durable inbound-delivery inbox drained by the channels-worker cron — unique on (provider, provider_delivery_id), due-work partial index, and a retention pointer for the raw provider payload",
+    },
+    {
+      id: "220_nexus_rules",
+      context: "nexus",
+      path: "220_nexus_rules/up.sql",
+      checksum:
+        "7642d765763e96e5d0446d96e8818e83129df76c44c07e96884d1a6f425661f6",
+      description:
+        "Versioned rule sets and per-jurisdiction rules — GLOBAL reference data, deliberately not tenant-scoped, with the verified gate and constraints tying threshold_logic to the threshold columns it needs",
+    },
+    {
+      id: "230_nexus_determinations",
+      context: "nexus",
+      path: "230_nexus_determinations/up.sql",
+      checksum:
+        "ca604de6e624eae7186824ab51361e446a7b4f286acfa6d01c91ef0a4fb1c0d4",
+      description:
+        "The immutable determination record — the reproducibility triple (rule_set_version, rule_id, engine_version) plus the exact inputs, never updated, with the internal-only flag carrying the unverified-rule-set gate",
+    },
+    {
+      id: "240_nexus_registrations",
+      context: "nexus",
+      path: "240_nexus_registrations/up.sql",
+      checksum:
+        "0e3d0b5d131a046fc39421949fc0d1ccb8c913e9a8d9eb51f86636acf3e1751e",
+      description:
+        "Seller registration state, the append-only alert log whose unique index is the exactly-once guarantee, and the per-org evaluation watermark keyed on ingested_at",
+    },
   ],
 };
