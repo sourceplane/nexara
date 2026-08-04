@@ -32,8 +32,8 @@
         "ENVIRONMENT": "stage",
         "NOTIFICATIONS_PROVIDER": "cloudflare-email",
         "DEBUG_DELIVERY": "true",
-        "EMAIL_FROM_ADDRESS": "no-reply@mail.nexara.orun.dev",
-        "EMAIL_FROM_NAME": "nexara"
+        "EMAIL_FROM_ADDRESS": "no-reply@mail.nexara.dev",
+        "EMAIL_FROM_NAME": "Nexara"
       },
       "send_email": [
         {
@@ -59,8 +59,8 @@
         "ENVIRONMENT": "prod",
         "NOTIFICATIONS_PROVIDER": "cloudflare-email",
         "DEBUG_DELIVERY": "false",
-        "EMAIL_FROM_ADDRESS": "no-reply@mail.nexara.orun.dev",
-        "EMAIL_FROM_NAME": "nexara"
+        "EMAIL_FROM_ADDRESS": "no-reply@mail.nexara.dev",
+        "EMAIL_FROM_NAME": "Nexara"
       },
       "send_email": [
         {
