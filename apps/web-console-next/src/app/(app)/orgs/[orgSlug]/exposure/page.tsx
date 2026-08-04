@@ -154,7 +154,12 @@ function Inner({ orgId, orgSlug }: { orgId: string; orgSlug: string }) {
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {rows.map((row) => (
-              <ExposureCard key={row.jurisdiction} exposure={row} orgBase={orgBase} />
+              <ExposureCard
+                key={row.jurisdiction}
+                exposure={row}
+                orgBase={orgBase}
+                monitoredLimit={data.monitoredLimit}
+              />
             ))}
           </div>
         </>

@@ -16,7 +16,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRight, CalendarClock } from "lucide-react";
+import { ArrowRight, CalendarClock, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { PublicJurisdictionExposure } from "@saas/contracts/nexus";
@@ -35,12 +36,46 @@ export interface ExposureCardProps {
   exposure: PublicJurisdictionExposure;
   /** `/orgs/:slug` — the card links to `${orgBase}/jurisdictions/:code`. */
   orgBase: string;
+  /** How many jurisdictions the plan monitors; shown on a locked card. */
+  monitoredLimit?: number | null;
 }
 
-export function ExposureCard({ exposure: e, orgBase }: ExposureCardProps) {
+export function ExposureCard({ exposure: e, orgBase, monitoredLimit }: ExposureCardProps) {
   const status = presentStatus(e.status);
   const outOfScope = e.status === "no_obligation";
   const neverEvaluated = e.determinationId === null;
+
+  // A locked jurisdiction is NAMED, never hidden. The seller can see they
+  // trade here and that their sales are recorded — they just do not get the
+  // measurement until they upgrade. Concealing the card entirely would be a
+  // compliance product hiding the thing it exists to surface.
+  if (e.locked) {
+    return (
+      <Card className="border-dashed" data-testid={`exposure-card-${e.jurisdiction}`}>
+        <CardContent className="space-y-3 p-4">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="truncate font-medium text-muted-foreground">{e.jurisdictionName}</div>
+              <div className="font-mono text-[11px] text-muted-foreground">{e.jurisdiction}</div>
+            </div>
+            <Badge variant="outline" className="shrink-0 gap-1">
+              <Lock className="h-3 w-3" /> Not monitored
+            </Badge>
+          </div>
+          <p className="text-xs leading-snug text-muted-foreground">
+            {typeof monitoredLimit === "number"
+              ? `Your plan monitors ${monitoredLimit} jurisdiction${monitoredLimit === 1 ? "" : "s"}. `
+              : ""}
+            Your sales here are still being recorded. Upgrading starts measuring this
+            jurisdiction from the ledger you already have, with no gap.
+          </p>
+          <Button asChild variant="outline" size="sm">
+            <Link href={`${orgBase}/settings/billing/change-plan`}>Upgrade to monitor</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="transition-shadow hover:shadow-sm" data-testid={`exposure-card-${e.jurisdiction}`}>

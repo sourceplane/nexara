@@ -133,6 +133,8 @@ function repoDouble(options: {
   channels?: string[];
   events?: SaleEvent[];
   spy?: Spy;
+  /** Jurisdictions this org trades into, in seniority order (design §9). */
+  active?: string[];
 }): NexusRepository {
   const ok = <T>(value: T): NexusResult<T> => ({ ok: true, value });
   const rules = options.rules ?? [ruleRow(), ruleRow({ jurisdiction: "US-OR", thresholdLogic: "none", salesThresholdCents: null, transactionThreshold: null, measurementTimezone: "America/Los_Angeles" })];
@@ -145,7 +147,7 @@ function repoDouble(options: {
     listSaleEventsPaged: async () => ok({ items: options.events ?? [], nextCursor: null }),
     getSaleEventById: async () => ({ ok: false, error: { kind: "not_found" } }),
     aggregateByJurisdiction: async () => ok([]),
-    listActiveJurisdictions: async () => ok([]),
+    listActiveJurisdictions: async () => ok(options.active ?? []),
     getCurrentRuleSet: async () =>
       options.ruleSet === null
         ? { ok: false, error: { kind: "not_found" } }
@@ -307,6 +309,108 @@ describe("the authorization gate", () => {
       repo: repoDouble({}),
     });
     expect(res.status).toBe(404);
+  });
+});
+
+// ── The §9 plan limit on the board ───────────────────────────
+//
+// The acceptance criterion is "a new tenant on the Starter plan is blocked at
+// the 11th jurisdiction with an upgrade prompt, not a 500". These pin what
+// "blocked" means here: named, not measured — and never a 500, never a hidden
+// card, and never a lost ledger row.
+
+describe("plan limit on the exposure board (design §9)", () => {
+  const RULES = [
+    ruleRow({ jurisdiction: "US-CA" }),
+    ruleRow({ jurisdiction: "US-TX" }),
+    ruleRow({ jurisdiction: "US-NY" }),
+  ];
+  const ACTIVE = ["US-CA", "US-TX", "US-NY"];
+
+  function envWithBilling(role: string): Env {
+    return { ...envFor(role), BILLING_WORKER: {} as unknown as Fetcher };
+  }
+
+  const decision = (limitValue: number | null) => ({
+    kind: "decision" as const,
+    decision: {
+      allowed: true as const,
+      orgId: ORG_PUBLIC,
+      entitlementKey: "limit.jurisdictions_monitored",
+      valueType: "quantity" as const,
+      limitValue,
+      source: "plan" as const,
+      subscriptionId: null,
+    },
+  });
+
+  async function board(
+    checkEntitlement: () => Promise<ReturnType<typeof decision> | { kind: "service_error" }>,
+  ) {
+    const res = await handleListExposure(envWithBilling("owner"), "req_1", ACTOR, ORG, {
+      repo: repoDouble({ rules: RULES, active: ACTIVE }),
+      checkEntitlement: checkEntitlement as never,
+    });
+    expect(res.status).toBe(200);
+    return (await res.json()) as {
+      data: {
+        exposure: Array<{ jurisdiction: string; locked: boolean; measuredSalesCents: number }>;
+        monitoredLimit: number | null;
+      };
+    };
+  }
+
+  it("locks jurisdictions beyond the limit and monitors the rest, by seniority", async () => {
+    const body = await board(async () => decision(2));
+    const byCode = new Map(body.data.exposure.map((e) => [e.jurisdiction, e]));
+    expect(byCode.get("US-CA")!.locked).toBe(false);
+    expect(byCode.get("US-TX")!.locked).toBe(false);
+    expect(byCode.get("US-NY")!.locked).toBe(true);
+    expect(body.data.monitoredLimit).toBe(2);
+  });
+
+  // The property the whole design rests on: a locked jurisdiction is still a
+  // card. Hiding it would mean a compliance product concealing that a seller
+  // trades into a state, which is the thing it exists to surface.
+  it("still NAMES every jurisdiction — a locked one is not a hidden one", async () => {
+    const body = await board(async () => decision(1));
+    expect(body.data.exposure.map((e) => e.jurisdiction).sort()).toEqual(
+      ["US-CA", "US-NY", "US-TX"].sort(),
+    );
+  });
+
+  it("carries no measurement on a locked card", async () => {
+    // Passing the stored determination through and merely flagging it would
+    // leak the answer the plan does not include, and would go stale silently
+    // once evaluation stops covering this jurisdiction.
+    const body = await board(async () => decision(0));
+    for (const card of body.data.exposure) {
+      expect(card.locked).toBe(true);
+      expect(card.measuredSalesCents).toBe(0);
+    }
+  });
+
+  it("monitors everything when the plan is unlimited", async () => {
+    const body = await board(async () => decision(null));
+    expect(body.data.exposure.every((e) => !e.locked)).toBe(true);
+    expect(body.data.monitoredLimit).toBeNull();
+  });
+
+  // Fails OPEN, deliberately and unlike the authorization gate: a billing
+  // outage must not silently stop measuring a seller's tax exposure.
+  it("monitors everything when billing is unreachable — and does not 500", async () => {
+    const body = await board(async () => ({ kind: "service_error" as const }));
+    expect(body.data.exposure.every((e) => !e.locked)).toBe(true);
+    expect(body.data.monitoredLimit).toBeNull();
+  });
+
+  it("monitors everything when no billing binding exists at all", async () => {
+    const res = await handleListExposure(envFor("owner"), "req_1", ACTOR, ORG, {
+      repo: repoDouble({ rules: RULES, active: ACTIVE }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: { exposure: Array<{ locked: boolean }> } };
+    expect(body.data.exposure.every((e) => !e.locked)).toBe(true);
   });
 });
 

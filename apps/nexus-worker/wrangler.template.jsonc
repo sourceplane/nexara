@@ -59,6 +59,10 @@
         {
           "binding": "NOTIFICATIONS_WORKER",
           "service": "nexara-notifications-worker-stage"
+        },
+        {
+          "binding": "BILLING_WORKER",
+          "service": "nexara-billing-worker-stage"
         }
       ]
     },
@@ -90,6 +94,10 @@
         {
           "binding": "NOTIFICATIONS_WORKER",
           "service": "nexara-notifications-worker-prod"
+        },
+        {
+          "binding": "BILLING_WORKER",
+          "service": "nexara-billing-worker-prod"
         }
       ]
     }

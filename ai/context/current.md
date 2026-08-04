@@ -78,8 +78,16 @@ date: **15 September 2026**.
   platform has no staff identity to authenticate a browser against, and the
   blocker is written down in
   [`support-view.md`](../../specs/epics/nexus/support-view.md).
-- **NX9** — the commercial surface (metered dimensions, plans, entitlement
-  gating), a seeded demo tenant, the docs set, and live verification.
+- **NX9** — the commercial surface. **Mostly done.** Plan limits are
+  entitlements on the existing plan codes (renaming a live code is a data
+  migration for no gain); the jurisdiction gate names the excess rather than
+  hiding it or dropping its ledger rows, and fails *open* on a billing outage.
+  `nexara demo seed` writes an 18-month deterministic ledger through the
+  product's own import API. `docs/architecture.md` and `docs/runbook.md` are in
+  the catalog. **Two things remain and both are blocked on something outside
+  the epic:** metered usage needs an internal seam on `metering-worker` (a
+  platform change, like the staff identity the support view needs), and live
+  verification needs the Supabase secret broker's `limit_reached` cleared.
 - Two questions to answer before they get expensive: who publishes and verifies
   rule sets (Q1), and whether the tenant is a seller or an accounting firm
   holding many sellers (Q2). Q4, Q5, and Q6 gate NX6. **R9** (a provider

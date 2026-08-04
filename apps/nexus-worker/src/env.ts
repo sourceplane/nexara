@@ -22,5 +22,8 @@ export interface Env {
    * records that no email was sent. The gap is visible rather than silent, and
    * `nexus.alerts.notification_ref` is where you look for it.
    */
+  /** Service binding to billing-worker for the §9 plan-limit check. Optional:
+   *  an unbound environment monitors every jurisdiction rather than none. */
+  BILLING_WORKER?: Fetcher;
   NEXUS_ALERT_EMAIL?: string;
 }

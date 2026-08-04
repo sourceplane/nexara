@@ -17,7 +17,80 @@
 | NX6 | **Done** | `channels-worker` + Stripe; Q4/Q5/Q6 resolved in `connector-gate.md` |
 | NX7 | **Done** | Shopify adapter |
 | NX8 | **Done** | Console, storefront, and the support capability ([`support-view.md`](./support-view.md)) |
-| NX9 | Not started | Entitlements, demo tenant, docs, verification |
+| NX9 | **Partial** | Entitlements, demo tenant, docs done; metering and live verification blocked — see below |
+
+## As-built — NX9 (commercial and evidence)
+
+### The plan limit, and the shape that took the thinking
+
+§9's dimensions are gated as entitlements on the **existing** plan codes
+(`free`/`pro`/`business`) rather than by renaming them to the design's
+proposed Starter/Growth/Firm. Renaming a live plan code is a data migration
+against every subscription for no product gain — the code is an assignment key,
+not a label — and the catalog carries an explicit no-regress rule.
+
+The jurisdiction gate is where the real decision was. Three obvious
+implementations are each a way of losing or hiding a seller's own data:
+
+| Approach | Why not |
+|---|---|
+| Refuse the ledger row | Their history is then permanently incomplete, and **no later upgrade can repair it**. A billing limit must never cost a customer their own data. |
+| Error the whole board | Punishes growth, hides the jurisdictions they *are* entitled to, reads as an outage. |
+| Hide the excess jurisdictions | Worst of the three: a compliance product that knows a seller trades into Texas and does not say so has chosen to conceal the thing it exists to surface. |
+
+So: **everything is ingested, the excess is named but not evaluated.** Locked
+cards appear on the board by name with an upgrade prompt and the sentence that
+makes the limit fair — *your sales here are still recorded, and upgrading
+measures from the ledger you already have, with no gap*. A test asserts
+`monitored ∪ locked` is always the whole input, so no future edit can quietly
+turn "locked" into "hidden".
+
+Selection is by **seniority**, not exposure. Ranking by exposure would be more
+useful right up until a jurisdiction fell out of the monitored set the month it
+got busy, which is backwards, and it would make the monitored set flicker.
+
+**The gate fails open.** A billing outage yields "unlimited", not "zero" —
+deliberately the opposite of how the authorization gate fails. "May this person
+see this" and "have they paid for more of it" are different questions, and
+getting the second wrong during an outage would silently stop measuring a
+seller's tax exposure.
+
+### The demo tenant
+
+`nexara demo seed` writes through the **product's own public API** —
+`channels.createManual` then `ledger.import`. No seeding backdoor: a demo that
+used a private path would prove the demo works, where this proves the *import*
+works, which is what a customer's first day actually is. Re-seeding is safe and
+reports its `duplicates` rather than hiding them.
+
+The generator (`packages/cli/src/demo/ledger.ts`) is **deterministic — no
+clock, no RNG** — because a demo whose outcomes vary by run has anecdotes
+rather than properties. 25 tests assert the constructed outcomes, the important
+one being Washington: **under** its $100,000 line on direct sales, **over** it
+once marketplace-facilitated sales count. Same ledger, two lawful answers,
+differing only by the state's own rule — the clearest possible demonstration
+that this product measures rather than guesses.
+
+### What is NOT done, and why
+
+- **Metered dimensions are not yet ingested to `metering-worker`.** Its
+  `record-usage` route requires a real actor with membership and policy
+  context; the drain and the evaluation cron have neither. Recording them needs
+  an internal service-binding seam on `metering-worker` of the kind
+  `billing-worker` already has (`x-internal-caller` with an allow-list). That
+  is a platform change with its own authorization question — the **second**
+  one this epic has run into, after the support view — and it belongs in a
+  change that can be reviewed as such rather than folded into a feature
+  milestone. The entitlement *limits* work without it; what is missing is usage
+  *reporting*.
+- **Live stage/prod verification has not run.** `db-migrate` cannot resolve its
+  Supabase token: `Brokered secret SUPABASE_ACCESS_TOKEN binding unavailable —
+  connection int_71290a8787e54e0f9cc894e80bed844d (broker: limit_reached)`.
+  Three separate attempts over an hour failed identically, including a fresh
+  attempt-1 run that failed in ten seconds, so this is a standing cap rather
+  than a burst. It needs the connection freed or its limit raised in the Orun
+  workspace. Nothing has been half-applied — on a PR that lane runs
+  `mode=plan`.
 
 ## As-built — NX8 (the console)
 

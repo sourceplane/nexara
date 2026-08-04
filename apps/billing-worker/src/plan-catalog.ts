@@ -38,6 +38,23 @@ export interface PlanDefinition {
   entitlements: PlanEntitlementDef[];
 }
 
+/**
+ * Nexara's commercial tiers (nexus design §9) map onto the existing plan
+ * **codes** rather than renaming them.
+ *
+ * §9 proposes Starter / Growth / Firm. Renaming live plan codes is a data
+ * migration against every existing subscription for no product gain — the code
+ * is an assignment key, not a label — so the tiers are expressed as
+ * entitlements on `free` / `pro` / `business` instead:
+ *
+ *   free      → Starter: 1 channel,  10 jurisdictions
+ *   pro       → Growth:  3 channels, all jurisdictions
+ *   business  → Firm:    unlimited both
+ *
+ * The display names shown to a customer are a presentation concern and can be
+ * retitled without touching an assignment.
+ */
+
 /** The plan code assigned to every organization at bootstrap. */
 export const DEFAULT_PLAN_CODE = "free";
 
@@ -84,6 +101,12 @@ export const PLAN_CATALOG: PlanDefinition[] = [
       { entitlementKey: "feature.custom_domains", valueType: "boolean", enabled: false, limitValue: null },
       { entitlementKey: "feature.multi_org", valueType: "boolean", enabled: false, limitValue: null },
       { entitlementKey: "limit.organizations", valueType: "quantity", enabled: true, limitValue: 1 },
+      // ── Nexara (nexus epic, design §9) ──
+      // The "Starter" tier of the design's table: a single-store seller. Ten
+      // jurisdictions is roughly "the states I actually ship to a lot", which
+      // is where a real seller starts and where they first feel the limit.
+      { entitlementKey: "limit.jurisdictions_monitored", valueType: "quantity", enabled: true, limitValue: 10 },
+      { entitlementKey: "limit.channels_connected", valueType: "quantity", enabled: true, limitValue: 1 },
     ],
   },
   {
@@ -101,6 +124,10 @@ export const PLAN_CATALOG: PlanDefinition[] = [
       { entitlementKey: "feature.custom_domains", valueType: "boolean", enabled: true, limitValue: null },
       { entitlementKey: "feature.multi_org", valueType: "boolean", enabled: false, limitValue: null },
       { entitlementKey: "limit.organizations", valueType: "quantity", enabled: true, limitValue: 1 },
+      // ── Nexara ── the design's "Growth" tier, and the default: all US
+      // jurisdictions, up to three storefronts.
+      { entitlementKey: "limit.jurisdictions_monitored", valueType: "quantity", enabled: true, limitValue: null },
+      { entitlementKey: "limit.channels_connected", valueType: "quantity", enabled: true, limitValue: 3 },
     ],
   },
   {
@@ -118,6 +145,10 @@ export const PLAN_CATALOG: PlanDefinition[] = [
       { entitlementKey: "feature.custom_domains", valueType: "boolean", enabled: true, limitValue: null },
       { entitlementKey: "feature.multi_org", valueType: "boolean", enabled: true, limitValue: null },
       { entitlementKey: "limit.organizations", valueType: "quantity", enabled: true, limitValue: 5 },
+      // ── Nexara ── the design's "Firm" tier: accountants holding many
+      // sellers, so neither dimension is capped.
+      { entitlementKey: "limit.jurisdictions_monitored", valueType: "quantity", enabled: true, limitValue: null },
+      { entitlementKey: "limit.channels_connected", valueType: "quantity", enabled: true, limitValue: null },
     ],
   },
   {
@@ -135,6 +166,9 @@ export const PLAN_CATALOG: PlanDefinition[] = [
       { entitlementKey: "feature.custom_domains", valueType: "boolean", enabled: true, limitValue: null },
       { entitlementKey: "feature.multi_org", valueType: "boolean", enabled: true, limitValue: null },
       { entitlementKey: "limit.organizations", valueType: "quantity", enabled: true, limitValue: null },
+      // ── Nexara ── unlimited, like everything else on this tier.
+      { entitlementKey: "limit.jurisdictions_monitored", valueType: "quantity", enabled: true, limitValue: null },
+      { entitlementKey: "limit.channels_connected", valueType: "quantity", enabled: true, limitValue: null },
     ],
   },
 ];

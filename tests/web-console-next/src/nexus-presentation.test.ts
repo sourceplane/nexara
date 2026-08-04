@@ -58,6 +58,7 @@ const exposure = (over: Partial<PublicJurisdictionExposure>): PublicJurisdiction
   evaluatedAt: "2026-08-04T00:00:00.000Z",
   ruleSetVersion: "2026.08.01",
   ruleSetVerified: true,
+  locked: false,
   ...over,
 });
 

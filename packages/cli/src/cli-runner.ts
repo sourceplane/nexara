@@ -25,6 +25,7 @@ import {
 import { makeWebhookVerifyCommand, type WebhookVerifyOptions } from "./commands/webhook-verify.js";
 import { makeWebhookSignCommand, type WebhookSignOptions } from "./commands/webhook-sign.js";
 import { webhookSecretsRotateCommand } from "./commands/webhook-secrets-rotate.js";
+import { demoSeedCommand } from "./commands/demo.js";
 import { webhookEnableCommand } from "./commands/webhook-enable.js";
 import { webhookDisableCommand } from "./commands/webhook-disable.js";
 import { webhookDeliveriesCommand } from "./commands/webhook-deliveries.js";
@@ -215,6 +216,9 @@ function buildRouter(opts: RunOptions): Router {
   r.register(["ledger", "import"], "Import sale events from a JSON file", ledgerImportCommand);
   r.register(["registration", "list"], "List registration status per jurisdiction", registrationListCommand);
   r.register(["registration", "set"], "Record registration status for a jurisdiction", registrationSetCommand);
+  // Seeds through the product's own public API — no backdoor, so a successful
+  // seed also proves the import path works.
+  r.register(["demo", "seed"], "Seed the demo tenant's 18-month ledger (--as-of)", demoSeedCommand);
   return r;
 }
 
