@@ -1,0 +1,73 @@
+// Rendered to wrangler.jsonc by tooling/wire/render.mjs (BF6 deploy-time wiring).
+// Resource IDs are NEVER committed: @@wiring(<component>/<env>:<key>)@@ tokens are
+// resolved from AWS Secrets Manager at deploy time (wire-live) or from the
+// committed wiring.fixture.json for offline dry-runs (wire-fixture).
+{
+  "name": "nexara-projects-worker",
+  "compatibility_date": "2025-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/index.ts",
+  "minify": false,
+  "vars": {
+    "ENVIRONMENT": "local"
+  },
+  "env": {
+    "dev": {
+      "vars": {
+        "ENVIRONMENT": "dev"
+      }
+    },
+    "stage": {
+      "workers_dev": false,
+      "vars": {
+        "ENVIRONMENT": "stage"
+      },
+      "hyperdrive": [
+        {
+          "binding": "PLATFORM_DB",
+          "id": "@@wiring(cloudflare-hyperdrive/stage:hyperdrive_id)@@"
+        }
+      ],
+      "services": [
+        {
+          "binding": "MEMBERSHIP_WORKER",
+          "service": "nexara-membership-worker-stage"
+        },
+        {
+          "binding": "POLICY_WORKER",
+          "service": "nexara-policy-worker-stage"
+        },
+        {
+          "binding": "BILLING_WORKER",
+          "service": "nexara-billing-worker-stage"
+        }
+      ]
+    },
+    "prod": {
+      "workers_dev": false,
+      "vars": {
+        "ENVIRONMENT": "prod"
+      },
+      "hyperdrive": [
+        {
+          "binding": "PLATFORM_DB",
+          "id": "@@wiring(cloudflare-hyperdrive/prod:hyperdrive_id)@@"
+        }
+      ],
+      "services": [
+        {
+          "binding": "MEMBERSHIP_WORKER",
+          "service": "nexara-membership-worker-prod"
+        },
+        {
+          "binding": "POLICY_WORKER",
+          "service": "nexara-policy-worker-prod"
+        },
+        {
+          "binding": "BILLING_WORKER",
+          "service": "nexara-billing-worker-prod"
+        }
+      ]
+    }
+  }
+}
