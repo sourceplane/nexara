@@ -13,7 +13,7 @@ penalties later. Nexara watches the line and says so on the day it is crossed.
 
 | Field | Value |
 |-------|-------|
-| Status | **In delivery** — NX0–NX4 have landed on `main`; the demo cut is complete apart from NX8's board. NX5 is unblocked; NX6 opens on Q4–Q6 |
+| Status | **In delivery** — NX0–NX5 have landed on `main`. NX6 opens on Q4–Q6; NX7–NX9 follow |
 | Cluster | **NX** (NX0–NX9, plus the NX1.5 review gate) — the first *product* bounded context on this starter |
 | Owner(s) | new `apps/nexus-worker`, new `apps/channels-worker`, `apps/api-edge`, `packages/{contracts,policy-engine,db,sdk,cli}`, `apps/web-console-next` |
 | Target branch | `main` |
@@ -69,7 +69,7 @@ measured, and the code version that decided — re-run it yourself."*
 | NX2 | Determination engine: pure `engine/{periods,measure,threshold,deadline}`, exhaustively unit-tested without a database | **Done** |
 | NX3 | Aggregation + ledger: `@saas/db/nexus` repository, the single-scan jurisdiction aggregate, dedupe-constrained append | **Done** |
 | NX4 | `nexus-worker` + edge + SDK + CLI: exposure, jurisdiction detail, evaluate, ledger import | **Done** |
-| NX5 | Evaluation cron, immutable determinations, threshold alerts (notifications + events + outgoing webhook type) | Ready |
+| NX5 | Evaluation cron, immutable determinations, threshold alerts (notifications + events + outgoing webhook type) | **Done** |
 | NX6 | `channels-worker`: provider seam, inbound inbox + drain, Stripe adapter, backfill/live-sync sequencing | Ready — gated on Q4–Q6 |
 | NX7 | Shopify adapter: ship-to jurisdiction resolution + marketplace-facilitator identification | Ready |
 | NX8 | Console: exposure board, jurisdiction detail + determination explainer, ledger, channels, registrations, read-only support view, storefront | Ready |

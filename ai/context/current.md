@@ -53,10 +53,15 @@ date: **15 September 2026**.
   seeded by migration `250` so the slice is actually runnable; every
   determination it produces is `internal_only` and the CLI prints the §11
   banner rather than a status.
-- **NX5** — the hourly evaluation cron, change detection, and threshold
-  alerts. Note the Cloudflare account cron limit recorded against
-  `integrations-worker`: the `scheduled` handler ships ready and may have to
-  stay idle until a slot frees.
+- ~~**NX5** — the hourly evaluation cron, change detection, and threshold
+  alerts.~~ **Done.** Cron attached at `7 * * * *`. `nexus.threshold.crossed`
+  needed no registry entry — `webhooks-worker` fans out every event type on the
+  log, so emitting it *is* the registration. **One gap carried to NX8:** the
+  alert recipient is a per-environment `NEXUS_ALERT_EMAIL` stopgap; a seller
+  naming their own tax contact needs a console to ask in. When unset the alert
+  row records `no_recipient_configured` rather than failing silently.
+- **NX6 → NX9** — the connectors, then the console and the commercial surface.
+  NX6 still opens on Q4, Q5, and Q6.
 - Two questions to answer before they get expensive: who publishes and verifies
   rule sets (Q1), and whether the tenant is a seller or an accounting firm
   holding many sellers (Q2). Q4, Q5, and Q6 gate NX6. **R9** (a provider

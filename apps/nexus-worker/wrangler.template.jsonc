@@ -15,6 +15,13 @@
   // it should be lifted to the rest of the fleet as its own change, not
   // smuggled in through this epic.
   "observability": { "enabled": true },
+  // Design §8: hourly, at :07. Offset from metering-worker's :05 so the two do
+  // not contend for the same Hyperdrive pool at the top of the hour. (The
+  // account was previously at the free plan's 5-cron limit; the Workers Paid
+  // upgrade of 2026-06-11 lifted it — see integrations-worker.)
+  "triggers": {
+    "crons": ["7 * * * *"]
+  },
   "vars": {
     "ENVIRONMENT": "local"
   },
