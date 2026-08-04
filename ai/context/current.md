@@ -48,8 +48,15 @@ date: **15 September 2026**.
   `nexus.`/`channels.` SQL found *outside* the repository (S-11) and reports an
   amended re-delivery as `divergent` rather than as an ordinary duplicate
   (S-8). Mutation-checked against three isolation bypasses.
-- **NX4** — the worker, the edge facade, the SDK, and the CLI. This closes the
-  demo cut alongside NX8's exposure board.
+- ~~**NX4** — the worker, the edge facade, the SDK, and the CLI.~~ **Done.**
+  The read product end to end. A synthetic `verified = false` rule set is
+  seeded by migration `250` so the slice is actually runnable; every
+  determination it produces is `internal_only` and the CLI prints the §11
+  banner rather than a status.
+- **NX5** — the hourly evaluation cron, change detection, and threshold
+  alerts. Note the Cloudflare account cron limit recorded against
+  `integrations-worker`: the `scheduled` handler ships ready and may have to
+  stay idle until a slot frees.
 - Two questions to answer before they get expensive: who publishes and verifies
   rule sets (Q1), and whether the tenant is a seller or an accounting firm
   holding many sellers (Q2). Q4, Q5, and Q6 gate NX6. **R9** (a provider

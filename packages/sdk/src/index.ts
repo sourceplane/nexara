@@ -17,6 +17,7 @@ import { BillingClient } from "./billing.js";
 import { ConfigClient } from "./config.js";
 import { EnvironmentsClient } from "./environments.js";
 import { EventsClient } from "./events.js";
+import { ExposureClient, LedgerClient, RegistrationsClient } from "./nexus.js";
 import { MembershipsClient } from "./memberships.js";
 import { MeteringClient } from "./metering.js";
 import { NotificationsClient } from "./notifications.js";
@@ -41,6 +42,12 @@ export class Nexara {
   readonly notifications: NotificationsClient;
   readonly auth: AuthClient;
   readonly integrations: IntegrationsClient;
+  /** The exposure board and the jurisdiction detail behind each card. */
+  readonly exposure: ExposureClient;
+  /** The append-only sale-event ledger. */
+  readonly ledger: LedgerClient;
+  /** Seller-owned registration state. */
+  readonly registrations: RegistrationsClient;
   /** Underlying HTTP transport. Exposed for advanced extension. */
   readonly transport: Transport;
 
@@ -60,6 +67,9 @@ export class Nexara {
     this.notifications = new NotificationsClient(this.transport);
     this.auth = new AuthClient(this.transport);
     this.integrations = new IntegrationsClient(this.transport);
+    this.exposure = new ExposureClient(this.transport);
+    this.ledger = new LedgerClient(this.transport);
+    this.registrations = new RegistrationsClient(this.transport);
   }
 }
 
@@ -98,6 +108,12 @@ export { ConfigClient, type ConfigScope } from "./config.js";
 export { NotificationsClient } from "./notifications.js";
 export { AuthClient } from "./auth.js";
 export { IntegrationsClient } from "./integrations.js";
+export {
+  ExposureClient,
+  LedgerClient,
+  RegistrationsClient,
+  type ListLedgerQuery,
+} from "./nexus.js";
 
 // Transport surface.
 export {
@@ -126,6 +142,46 @@ export {
   type ErrorEnvelope,
   type RateLimitWindow,
 } from "./errors.js";
+
+// Nexus contract types, re-exported so consumers do not import
+// `@saas/contracts` directly. The engine-facing shapes (`Rule`,
+// `DeterminationInputs`) come too: a caller re-deriving a determination years
+// from now needs them, and telling them to reach past the SDK for it would
+// make the reproducibility promise harder to keep than to state.
+export type {
+  PublicJurisdictionExposure,
+  PublicDetermination,
+  PublicSaleEvent,
+  PublicRegistration,
+  PublicRule,
+  PublicRuleSet,
+  PublicAlert,
+  DeterminationInputs,
+  DeterminationOutcome,
+  DeterminationStatus,
+  EngineStatus,
+  JurisdictionAggregate,
+  MeasurementBasis,
+  MeasurementPeriod,
+  MeasurementWindow,
+  MarketplaceTreatment,
+  RegistrationDeadlineRule,
+  RegistrationStatus,
+  Rule,
+  SaleEventKind,
+  ThresholdLogic,
+  ImportLedgerRequest,
+  ImportLedgerResponse,
+  ImportSaleEventInput,
+  ListExposureResponse,
+  GetJurisdictionResponse,
+  EvaluateRequest,
+  EvaluateResponse,
+  ListLedgerResponse,
+  ListRegistrationsResponse,
+  UpsertRegistrationRequest,
+  UpsertRegistrationResponse,
+} from "@saas/contracts/nexus";
 
 // Re-export contract types so consumers don't import `@saas/contracts` directly.
 export type {

@@ -263,6 +263,9 @@ importers:
       '@saas/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@saas/db':
+        specifier: workspace:*
+        version: link:../../packages/db
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.20250508.0
@@ -276,6 +279,9 @@ importers:
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
+      wrangler:
+        specifier: ^4.14.4
+        version: 4.90.0(@cloudflare/workers-types@4.20260510.1)
 
   apps/notifications-worker:
     dependencies:

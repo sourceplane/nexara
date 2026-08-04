@@ -57,7 +57,8 @@ export type RouteFamily =
   | "billing"
   | "audit"
   | "notifications"
-  | "integrations";
+  | "integrations"
+  | "nexus";
 
 interface BucketLimits {
   /** Bucket capacity (max tokens). */
@@ -119,6 +120,14 @@ const LIMITS: Record<RouteFamily, FamilyConfig> = {
   integrations: {
     identity: { limit: 60, windowSec: 60 },
     org: { limit: 300, windowSec: 60 },
+  },
+  // Reads dominate: a console session paints the board, then a jurisdiction
+  // detail, then the ledger, in quick succession. The org bucket is raised
+  // accordingly; the identity bucket stays at the default because a single
+  // human does not out-click it and a script that does should be throttled.
+  nexus: {
+    identity: { limit: 120, windowSec: 60 },
+    org: { limit: 600, windowSec: 60 },
   },
 };
 

@@ -97,6 +97,10 @@
         {
           "binding": "INTEGRATIONS_WORKER",
           "service": "nexara-integrations-worker-stage"
+        },
+        {
+          "binding": "NEXUS_WORKER",
+          "service": "nexara-nexus-worker-stage"
         }
       ],
       "durable_objects": {
@@ -166,6 +170,10 @@
         {
           "binding": "INTEGRATIONS_WORKER",
           "service": "nexara-integrations-worker-prod"
+        },
+        {
+          "binding": "NEXUS_WORKER",
+          "service": "nexara-nexus-worker-prod"
         }
       ],
       "durable_objects": {

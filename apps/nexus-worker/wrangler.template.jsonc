@@ -1,0 +1,90 @@
+// Rendered to wrangler.jsonc by tooling/wire/render.mjs (BF6 deploy-time wiring).
+// Resource IDs are NEVER committed: @@wiring(<component>/<env>:<key>)@@ tokens are
+// resolved from the orun secret lease at deploy time (wire-live) or from the
+// committed wiring.fixture.json for offline dry-runs (wire-fixture).
+{
+  "name": "nexara-nexus-worker",
+  "compatibility_date": "2025-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/index.ts",
+  "minify": false,
+  // Design §12. The platform's wrangler templates enable neither Workers Logs
+  // retention nor a named signal per failure mode, and a compliance product
+  // cannot be operated blind — every risk this product carries fails quietly.
+  // This is the first worker pair in the repo to set it; if it proves out here
+  // it should be lifted to the rest of the fleet as its own change, not
+  // smuggled in through this epic.
+  "observability": { "enabled": true },
+  "vars": {
+    "ENVIRONMENT": "local"
+  },
+  "env": {
+    "dev": {
+      "vars": {
+        "ENVIRONMENT": "dev"
+      }
+    },
+    "stage": {
+      "workers_dev": false,
+      "vars": {
+        "ENVIRONMENT": "stage"
+      },
+      "observability": { "enabled": true },
+      "hyperdrive": [
+        {
+          "binding": "PLATFORM_DB",
+          "id": "@@wiring(cloudflare-hyperdrive/stage:hyperdrive_id)@@"
+        }
+      ],
+      "services": [
+        {
+          "binding": "MEMBERSHIP_WORKER",
+          "service": "nexara-membership-worker-stage"
+        },
+        {
+          "binding": "POLICY_WORKER",
+          "service": "nexara-policy-worker-stage"
+        },
+        {
+          "binding": "EVENTS_WORKER",
+          "service": "nexara-events-worker-stage"
+        },
+        {
+          "binding": "NOTIFICATIONS_WORKER",
+          "service": "nexara-notifications-worker-stage"
+        }
+      ]
+    },
+    "prod": {
+      "workers_dev": false,
+      "vars": {
+        "ENVIRONMENT": "prod"
+      },
+      "observability": { "enabled": true },
+      "hyperdrive": [
+        {
+          "binding": "PLATFORM_DB",
+          "id": "@@wiring(cloudflare-hyperdrive/prod:hyperdrive_id)@@"
+        }
+      ],
+      "services": [
+        {
+          "binding": "MEMBERSHIP_WORKER",
+          "service": "nexara-membership-worker-prod"
+        },
+        {
+          "binding": "POLICY_WORKER",
+          "service": "nexara-policy-worker-prod"
+        },
+        {
+          "binding": "EVENTS_WORKER",
+          "service": "nexara-events-worker-prod"
+        },
+        {
+          "binding": "NOTIFICATIONS_WORKER",
+          "service": "nexara-notifications-worker-prod"
+        }
+      ]
+    }
+  }
+}
