@@ -13,7 +13,7 @@ penalties later. Nexara watches the line and says so on the day it is crossed.
 
 | Field | Value |
 |-------|-------|
-| Status | **In delivery** — NX0, NX1, NX1.5, and NX2 have landed on `main`. NX3–NX5 are unblocked; NX6 opens on Q4–Q6 |
+| Status | **In delivery** — NX0–NX3 have landed on `main`. NX4 and NX5 are unblocked; NX6 opens on Q4–Q6 |
 | Cluster | **NX** (NX0–NX9, plus the NX1.5 review gate) — the first *product* bounded context on this starter |
 | Owner(s) | new `apps/nexus-worker`, new `apps/channels-worker`, `apps/api-edge`, `packages/{contracts,policy-engine,db,sdk,cli}`, `apps/web-console-next` |
 | Target branch | `main` |
@@ -67,7 +67,7 @@ measured, and the code version that decided — re-run it yourself."*
 | NX1 | Contracts + schema: `@saas/contracts/{nexus,channels}`, migrations `200`–`240`, RBAC actions | **Done** |
 | NX1.5 | **Gate** — adversarial schema + tenant-isolation review, written findings, before anything is built on the schema | **Done** — 12 findings, [`schema-review.md`](./schema-review.md) |
 | NX2 | Determination engine: pure `engine/{periods,measure,threshold,deadline}`, exhaustively unit-tested without a database | **Done** |
-| NX3 | Aggregation + ledger: `@saas/db/nexus` repository, the single-scan jurisdiction aggregate, dedupe-constrained append | Ready |
+| NX3 | Aggregation + ledger: `@saas/db/nexus` repository, the single-scan jurisdiction aggregate, dedupe-constrained append | **Done** |
 | NX4 | `nexus-worker` + edge + SDK + CLI: exposure, jurisdiction detail, evaluate, ledger import | Ready |
 | NX5 | Evaluation cron, immutable determinations, threshold alerts (notifications + events + outgoing webhook type) | Ready |
 | NX6 | `channels-worker`: provider seam, inbound inbox + drain, Stripe adapter, backfill/live-sync sequencing | Ready — gated on Q4–Q6 |

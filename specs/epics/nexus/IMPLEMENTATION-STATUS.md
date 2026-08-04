@@ -11,13 +11,78 @@
 | NX1 | **Done** | Contracts, migrations `200`–`240`, RBAC actions |
 | NX1.5 | **Done** | Gate — 12 findings; 8 fixed, 4 accepted in writing ([`schema-review.md`](./schema-review.md)) |
 | NX2 | **Done** | Determination engine + boundary, purity, and reproducibility tests |
-| NX3 | Not started | Aggregation, ledger append, tenant-scoping CI scan |
+| NX3 | **Done** | Aggregation, ledger append, tenant-scoping CI scan |
 | NX4 | Not started | `nexus-worker` + edge facade + SDK + CLI |
 | NX5 | Not started | Evaluation cron, determinations, alerts |
 | NX6 | Not started | `channels-worker` + Stripe |
 | NX7 | Not started | Shopify adapter |
 | NX8 | Not started | Console |
 | NX9 | Not started | Entitlements, demo tenant, docs, verification |
+
+## As-built — NX3 (aggregation and the ledger)
+
+- `packages/db/src/nexus/{types,repository,index}.ts` — the single SQL surface
+  for the `nexus` schema, `Result`-typed, org-scoped, keyset-paginated,
+  closures over an injected `SqlExecutor`. Package `exports` entry added.
+- `tests/db/src/tenancy-scan.test.ts` — the isolation control.
+- `tests/db/src/nexus-repository.test.ts` — 30 tests over three layers.
+
+**No contract dependency.** `@saas/db` has never imported `@saas/contracts` and
+still does not: the column unions are declared locally, mirroring the Postgres
+CHECK constraints, and the mapping to wire shapes lives in the worker's
+`mappers.ts` where a divergence is visible. The `inputs` and
+`registration_deadline_rule` JSONB columns are typed opaque here — a db-layer
+definition of the reproducibility payload would be a second definition that
+could drift from the one the engine actually replays.
+
+### The two NX1.5 requirements, discharged
+
+**S-11 — the scan verifies the claim, not just the queries.** Scanning the
+repository verifies the queries it finds; it does not verify that they are all
+of them. The scan now also walks `apps/` and `packages/` and fails any
+`nexus.`/`channels.` SQL found outside `packages/db/src/{nexus,channels}`,
+which converts "one repository module is the only SQL surface" from a
+convention into a test.
+
+**S-8 — an amended re-delivery is no longer a silent no-op.** `appendSaleEvents`
+returns `divergent[]` alongside `applied`/`duplicates`: on a conflict it reads
+the stored rows back and reports any whose monetary values differ from what was
+submitted. One extra query, and only when something conflicted — on the
+steady-state path, never.
+
+### Exemptions are declared at the call site, not granted by table name
+
+The design proposed exempting `nexus.rule_sets` and `nexus.rules` by name.
+NX1.5 finding S-9 narrowed that: a query may skip `org_id = $` only with a
+`tenancy-exempt: <reason>` marker within sixteen lines above it, and only for
+one of three reasons — `global-reference-data`, `cross-tenant-sweep`,
+`pre-attribution-inbox`. Exempting by table name would have disarmed the scan
+for every *future* read of those tables. Two further assertions stop the
+markers from being load-bearing in the wrong direction: a
+`global-reference-data` marker cannot cover a query that also touches a tenant
+table, and a `cross-tenant-sweep` may select org ids and timestamps but not
+money, jurisdictions, or payloads.
+
+### One finding the scan produced on its first run
+
+`listSaleEventsPaged` and `listDeterminationsPaged` built their `WHERE` from a
+`clauses` array whose first element was `"org_id = $1"`. The scan flagged both,
+and it was right to: a tenant predicate assembled into a join is one refactor
+away from not being there, and neither a reader nor the scan can see it. Both
+now read `WHERE org_id = $1${andAll(clauses)}` — the predicate is structural,
+the array holds only optional filters.
+
+### Verification
+
+- 664 tests in `tests/db` (was 634).
+- **Mutation-checked.** Three deliberate isolation bypasses each turned the
+  scan red: dropping `org_id` from a read, inventing an exemption reason, and
+  putting a `nexus.` query in `apps/nexus-worker/src/`.
+- The repository tests assert in three layers: query *shape* (half-open bounds,
+  the `FILTER` split, the `ON CONFLICT` target, `DISTINCT ON`, `GREATEST`),
+  *mapping* (`BIGINT`-as-string, the safe-integer guard, `DATE` without a
+  timezone shift), and *behaviour* over a seeded ledger with a refund in it,
+  against hand-computed fixtures for all three window types.
 
 ## As-built — NX2 (the determination engine)
 
