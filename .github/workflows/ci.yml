@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# PR runs share a group per ref and superseded runs are cancelled (each
+# push re-plans anyway), which stops stale fan-outs from starving the
+# runner pool. Main pushes get a unique group each: convergence runs plan
+# --changed per commit, and GitHub replaces *pending* runs in a shared
+# group even with cancel-in-progress false — a superseded main run's
+# components would silently never converge.
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      job-matrix: ${{ steps.matrix.outputs.job-matrix }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: sourceplane/orun-action@v1.2.0
+        with:
+          version: v2.52.6
+      - env:
+          # Surface the best-effort catalog auto-sync (execution.state.autopushCatalog).
+          # A successful push prints "✓ pushed catalog …"; ORUN_VERBOSE also makes
+          # any skip/failure visible instead of silent.
+          ORUN_VERBOSE: "1"
+        run: |
+          set -euo pipefail
+
+          plan_args=(
+            --from-ci github
+            --event-file "$GITHUB_EVENT_PATH"
+            --intent intent.yaml
+            --output plan.json
+            --changed
+          )
+
+          orun plan "${plan_args[@]}"
+      - id: matrix
+        run: |
+         echo "job-matrix=$(jq -c '[.jobs[] | {"job-id": .id, "job-name": .checkName}]' plan.json)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: orun-plan
+          path: plan.json
+
+  run:
+    needs: plan
+    runs-on: ubuntu-latest
+    if: ${{ needs.plan.outputs.job-matrix != '[]' && needs.plan.outputs.job-matrix != '' }}
+    strategy:
+      fail-fast: false
+      # Stagger the fan-out: every lane hits the lease-bound resolve at job
+      # start, and an unbounded herd saturated it twice. The orun DAG already
+      # serializes dependents, so capped parallelism costs little wall-clock.
+      max-parallel: 8
+      matrix:
+        include: ${{ fromJson(needs.plan.outputs.job-matrix) }}
+    name: ${{ matrix.job-name }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
+        with:
+          name: orun-plan
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: sourceplane/orun-action@v1.2.0
+        with:
+          version: v2.52.6
+      # exec-id is the RUN id alone (no attempt suffix): a `gh run rerun
+      # --failed` then RESUMES the same orun execution — jobs that succeeded in
+      # a prior attempt stay completed, so re-run lanes' cross-job dependencies
+      # are already satisfied instead of waiting forever on lanes that are not
+      # re-running (the partial-rerun deadlock). --retry re-opens THIS lane's
+      # job when it terminally failed in a prior attempt (no-op on first
+      # attempts) — together they make `gh run rerun --failed` a true resume.
+      - run: |
+          # --retry only on re-run attempts: on a fresh attempt a failed
+          # upstream is a genuine failure and dependents must fail fast; on a
+          # resume (gh run rerun --failed) the upstream's own retry lane will
+          # re-open it, so lanes wait out the race instead.
+          retry_flag=""
+          if [ "${GITHUB_RUN_ATTEMPT:-1}" -gt 1 ]; then retry_flag="--retry"; fi
+          orun run \
+            --plan plan.json \
+            --runner github-actions \
+            --remote-state \
+            --job "${{ matrix.job-id }}" \
+            --exec-id "${{ github.run_id }}" \
+            $retry_flag
+        env:
+          # GITHUB_TOKEN is the only credential CI holds — GitHub-issued and
+          # ephemeral. Every provider credential (Cloudflare token + account
+          # id, Supabase management token + org id) is an orun-managed secret:
+          # brokered fresh per run from the workspace's integrations, resolved
+          # lease-bound by the jobs that declare it (profile secretBindings or
+          # component secretEnv), and log-redacted. Nothing provider-shaped is
+          # stored in GitHub.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCKER_CONFIG: /home/runner/.docker

@@ -98,7 +98,7 @@ environments:
     policies:
       requireApproval: "false"
     env:
-      BASE_DOMAIN: nexara
+      BASE_DOMAIN: nexara.orun.dev
 
   stage:
     activation:
@@ -112,11 +112,11 @@ environments:
         namespacePrefix: stg-
         owner: sourceplane
         repo: nexara
-        CONSOLE_CUSTOM_DOMAIN: stage.nexara
+        CONSOLE_CUSTOM_DOMAIN: stage.nexara.orun.dev
     policies:
       requireApproval: "false"
     env:
-      BASE_DOMAIN: nexara
+      BASE_DOMAIN: nexara.orun.dev
 
   prod:
     activation:
@@ -133,11 +133,11 @@ environments:
         namespacePrefix: prod-
         owner: sourceplane
         repo: nexara
-        CONSOLE_CUSTOM_DOMAIN: prod.nexara
+        CONSOLE_CUSTOM_DOMAIN: prod.nexara.orun.dev
     policies:
       requireApproval: "false"
     env:
-      BASE_DOMAIN: nexara
+      BASE_DOMAIN: nexara.orun.dev
 
 # Repo-level catalog entity: front page + role-tagged docs (rendered in
 # the workspace Docs library, pinned to the commit by `orun plan`).

@@ -1,7 +1,7 @@
 {
   "repoName": "nexara",
   "productName": "nexara",
-  "productDomain": "nexara",
-  "workersDevSubdomain": "orun",
+  "productDomain": "nexara.orun.dev",
+  "workersDevSubdomain": "nexara.orun",
   "orunWorkspace": "org_688ef44a036e4ae9b15daa64f4a6588f"
 }
