@@ -54,18 +54,18 @@ measured, and the code version that decided — re-run it yourself."*
    acceptance criteria.
 4. [`risks-and-open-questions.md`](./risks-and-open-questions.md) — what could
    make this wrong, and what is still undecided.
-5. [`IMPLEMENTATION-STATUS.md`](./IMPLEMENTATION-STATUS.md) — as-built record.
-
-`schema-review.md` joins this set at NX1.5 and does not exist yet; it is the
-review gate's only artefact, and NX3 does not open without it.
+5. [`schema-review.md`](./schema-review.md) — the NX1.5 gate's findings, each
+   with a severity and a disposition. NX3 did not open until every one was
+   closed or accepted in writing.
+6. [`IMPLEMENTATION-STATUS.md`](./IMPLEMENTATION-STATUS.md) — as-built record.
 
 ## Milestones at a glance
 
 | ID | Milestone | Status |
 |----|-----------|--------|
 | NX0 | Product identity: repo + catalog framing from "starter" to Nexara; this epic doc set | **Done** |
-| NX1 | Contracts + schema: `@saas/contracts/{nexus,channels}`, migrations `200`–`240`, RBAC actions | Ready |
-| NX1.5 | **Gate** — adversarial schema + tenant-isolation review, written findings, before anything is built on the schema | Ready |
+| NX1 | Contracts + schema: `@saas/contracts/{nexus,channels}`, migrations `200`–`240`, RBAC actions | **Done** |
+| NX1.5 | **Gate** — adversarial schema + tenant-isolation review, written findings, before anything is built on the schema | **Done** — 12 findings, [`schema-review.md`](./schema-review.md) |
 | NX2 | Determination engine: pure `engine/{periods,measure,threshold,deadline}`, exhaustively unit-tested without a database | Ready |
 | NX3 | Aggregation + ledger: `@saas/db/nexus` repository, the single-scan jurisdiction aggregate, dedupe-constrained append | Ready |
 | NX4 | `nexus-worker` + edge + SDK + CLI: exposure, jurisdiction detail, evaluate, ledger import | Ready |

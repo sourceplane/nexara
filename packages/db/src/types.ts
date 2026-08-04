@@ -15,6 +15,11 @@ export const BOUNDED_CONTEXTS = [
   "notifications",
   "support",
   "integrations",
+  // Product contexts (nexus epic). `channels` owns ingestion; both share the
+  // `nexus` Postgres schema because the ledger and the inbox are written in
+  // one transaction by the drain, and a cross-schema transaction buys nothing.
+  "nexus",
+  "channels",
 ] as const;
 
 export type BoundedContext = (typeof BOUNDED_CONTEXTS)[number];

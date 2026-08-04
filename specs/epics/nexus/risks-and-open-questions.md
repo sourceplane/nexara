@@ -79,6 +79,28 @@ exactly enough to matter and produces no error anywhere.
 Mitigated by §5.3 case 4 as an explicit test, and by never deriving a date from
 a timestamp outside `engine/periods.ts`.
 
+### R9 — An amended provider event is silently dropped · High
+
+Raised by the NX1.5 review as finding S-8. The ledger dedupes on
+`(org_id, channel_id, provider_event_id, kind)` with `ON CONFLICT DO NOTHING`.
+A provider that re-sends the same event id with **different amounts** — a
+Stripe charge amended after currency conversion settles, a Shopify order edited
+before fulfilment — is discarded, and the first amount stands forever. Because
+the ledger is append-only there is no correction path in the v1 design at all.
+
+This cannot be fixed in the schema without either putting business logic into a
+constraint or making the ledger updatable, and the second loses invariant 2 and
+the evidentiary argument with it.
+
+Mitigations, each a milestone requirement rather than an intention: NX3's
+`appendSaleEvents` reads back a conflicting row and distinguishes an *identical*
+duplicate from a *differing* one; NX6's drain marks a differing duplicate
+`skipped` with its own reason and raises the §12 signal, because that is the
+one case where a silent no-op is wrong. **Open:** a first-class amendment event
+(`kind = 'amendment'`, delta cents, pointing at the original) is the correct
+long-term answer and is additive against the current schema — it is not in
+NX0–NX9.
+
 ### R8 — Provider API and webhook-shape drift · Low
 
 Stripe and Shopify version their APIs and change payload shapes.

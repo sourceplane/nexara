@@ -26,10 +26,24 @@ describe("Integrations Migration Verification", () => {
     );
   });
 
-  it("orders the integrations migrations at the manifest tail", () => {
+  // NX1 claimed the 200 decade, so "at the tail" is no longer true and would
+  // have to be rewritten by every future context. What the assertion is
+  // actually protecting is the ORDER — 190 alters a table 180 creates — so
+  // assert that directly instead of a position that decays.
+  it("orders 190 immediately after 180, and both after every platform context", () => {
     const ids = manifest.migrations.map((m) => m.id);
-    expect(ids.indexOf("180_integrations_foundation")).toBe(ids.length - 2);
-    expect(ids.indexOf("190_integrations_delivery_attribution")).toBe(ids.length - 1);
+    const foundation = ids.indexOf("180_integrations_foundation");
+    const attribution = ids.indexOf("190_integrations_delivery_attribution");
+
+    expect(foundation).toBeGreaterThanOrEqual(0);
+    expect(attribution).toBe(foundation + 1);
+
+    // Nothing outside the integrations context sits between them or before
+    // 180 in a later decade.
+    const laterNonProduct = manifest.migrations
+      .slice(0, foundation)
+      .filter((m) => m.id >= "180_");
+    expect(laterNonProduct).toEqual([]);
   });
 
   it("manifest checksums match the on-disk up.sql files", () => {
