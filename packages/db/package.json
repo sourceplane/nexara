@@ -20,6 +20,7 @@
     "./notifications": "./src/notifications/index.ts",
     "./support": "./src/support/index.ts",
     "./integrations": "./src/integrations/index.ts",
+    "./nexus": "./src/nexus/index.ts",
     "./runner": "./src/runner/index.ts"
   },
   "bin": {

@@ -42,9 +42,14 @@ date: **15 September 2026**.
 - ~~**NX2** — the pure determination engine.~~ **Done.** `ENGINE_VERSION`
   1.0.0, 144 tests, every §5.3 boundary named, purity enforced by a source
   scan, and four frozen reproducibility vectors. Mutation-checked.
-- **NX3 → NX4** — aggregation and the ledger repository, then the
-  worker/edge/SDK/CLI slice. With NX2 done this is the rest of the demo cut.
-  NX3 carries the two requirements the NX1.5 review left it.
+- ~~**NX3** — aggregation and the ledger repository.~~ **Done.** The single
+  SQL surface for the `nexus` schema, the §5.1 single-scan aggregate, the
+  dedupe-constrained append, and the tenancy scan — which now also fails
+  `nexus.`/`channels.` SQL found *outside* the repository (S-11) and reports an
+  amended re-delivery as `divergent` rather than as an ordinary duplicate
+  (S-8). Mutation-checked against three isolation bypasses.
+- **NX4** — the worker, the edge facade, the SDK, and the CLI. This closes the
+  demo cut alongside NX8's exposure board.
 - Two questions to answer before they get expensive: who publishes and verifies
   rule sets (Q1), and whether the tenant is a seller or an accounting firm
   holding many sellers (Q2). Q4, Q5, and Q6 gate NX6. **R9** (a provider
