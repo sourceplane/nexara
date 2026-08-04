@@ -1,10 +1,28 @@
-# nexara
+# Nexara
 
-Reusable Cloudflare + Supabase multi-tenant SaaS starter, built as an
+**Economic-nexus threshold monitoring for ecommerce sellers.**
+
+A seller owes sales tax in a US state once their sales into that state cross an
+*economic nexus* threshold. The thresholds differ per state — in amount, in what
+counts toward them, and in the window they are measured over. Most sellers find
+out they crossed one when a state sends a notice, years and penalties later.
+Nexara watches the line and says so on the day it is crossed: every sale ingested
+into an append-only ledger, measured per jurisdiction in the right window on the
+right basis, compared against the versioned rule in force on that date, and
+recorded as an immutable determination that can be re-derived years later.
+
+[`docs/overview.md`](docs/overview.md) is the product front page — what it does,
+why it is defensible, and what it deliberately does not do.
+
+**How it is built** — and the rest of this file — is the platform underneath:
+Cloudflare Workers and Supabase Postgres as an
 [Orun](https://opencode.ai/docs) component-native desired-state repo. Identity,
 organizations, projects, RBAC, audit, metering, billing, webhooks, and
-notifications ship as separate bounded-context Cloudflare Workers behind a single
-public edge API, with a Next.js console on Workers + Static Assets.
+notifications ship as separate bounded-context Workers behind a single public
+edge API, with a Next.js console on Workers + Static Assets. The product adds
+two contexts to that: `nexus` (the ledger, the engine, determinations) and
+`channels` (getting sales out of Stripe and Shopify without losing or
+double-counting one).
 
 ## Live deployment
 
@@ -16,6 +34,15 @@ after phase 06 to fill this section from verified live state
 
 ## Status
 
+- **Product: the `nexus` epic is in delivery.** Economic-nexus monitoring
+  lands as milestones NX0–NX9 against the shipped platform; the charter, the
+  design, and the milestone plan are in
+  [`specs/epics/nexus/`](specs/epics/nexus/), and the as-built record is
+  [`IMPLEMENTATION-STATUS.md`](specs/epics/nexus/IMPLEMENTATION-STATUS.md).
+- **No environment runs a verified rule set.** Every environment runs a
+  synthetic rule set with `verified = false` until a named human with
+  tax-practice accountability verifies one against primary sources. Unverified
+  rule sets produce internal-only determinations and no customer-facing alert.
 - **Runtime is live, per environment, through Orun.** The edge API, the
   bounded-context Workers, and the console deploy to `stage` and `prod` via
   `orun run` (no direct Wrangler/Terraform/pnpm in CI).
@@ -63,6 +90,9 @@ pnpm build
 ## Workspace Layout
 
 ```
+apps/nexus-worker         Sale-event ledger, determination engine, determinations
+apps/channels-worker      Sales-channel connections, inbound inbox, backfill drain
+
 apps/api-edge             Public HTTP entry point (Cloudflare Worker)
 apps/identity-worker      Users, sessions, API keys, OAuth
 apps/membership-worker    Organizations, members, invitations, role assignments
