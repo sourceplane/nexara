@@ -44,6 +44,7 @@ import {
   formatCents,
   isReversal,
 } from "@/components/nexus/nexus";
+import { NexusErrorState } from "@/components/nexus/error-state";
 import { wrap } from "@/lib/api";
 import { useAsync } from "@/lib/use-async";
 import { useSession } from "@/lib/session";
@@ -72,7 +73,7 @@ function Inner({ orgId }: { orgId: string }) {
     return q;
   }, [filters]);
 
-  const { data, loading, error } = useAsync(
+  const { data, loading, error, reload } = useAsync(
     () => wrap(() => client.ledger.list(orgId, queryArgs)),
     [client, orgId, queryArgs],
   );
@@ -164,12 +165,7 @@ function Inner({ orgId }: { orgId: string }) {
           ))}
         </div>
       ) : error ? (
-        <Card>
-          <CardContent className="p-4">
-            <div className="font-medium text-destructive">{error.code}</div>
-            <div className="text-sm text-muted-foreground">{error.message}</div>
-          </CardContent>
-        </Card>
+        <NexusErrorState error={error} surface="your ledger" onRetry={reload} />
       ) : events.length === 0 ? (
         <EmptyState
           icon={Receipt}

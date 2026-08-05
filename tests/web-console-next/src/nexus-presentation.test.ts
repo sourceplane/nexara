@@ -8,6 +8,7 @@
 // than through a rendered tree.
 
 import {
+  presentApiError,
   describeBackfill,
   describeBasis,
   describeJurisdictionSource,
@@ -457,5 +458,70 @@ describe("presentAlertContact", () => {
       presentAlertContact({ kind: "none" }).tone,
     ];
     expect(new Set(tones).size).toBe(3);
+  });
+});
+
+describe("presentApiError", () => {
+  const notFound = presentApiError({ code: "not_found", message: "Not found" });
+
+  it("never renders the raw wire code or its bare message", () => {
+    // The console used to print `not_found` in red above the words "Not found".
+    for (const code of ["not_found", "precondition_failed", "network_error", "internal_error"]) {
+      const p = presentApiError({ code, message: code });
+      expect(p.title).not.toContain("_");
+      expect(p.title.toLowerCase()).not.toBe("not found");
+      expect(p.title.length).toBeGreaterThan(8);
+      expect(p.body.length).toBeGreaterThan(20);
+    }
+  });
+
+  // The load-bearing one. Deny-as-404 means a membership miss, a policy denial
+  // and an absent org are indistinguishable to the client — so the copy must
+  // not resolve that ambiguity, and above all must not read as reassurance.
+  it("does not tell a seller they are clear when the board could not be read", () => {
+    const text = `${notFound.title} ${notFound.body}`.toLowerCase();
+    expect(text).not.toContain("no positions");
+    expect(text).not.toContain("you are clear");
+    expect(text).not.toContain("nothing to report");
+    expect(text).not.toContain("up to date");
+  });
+
+  it("says plainly that nothing is being claimed about the tax position", () => {
+    expect(notFound.body.toLowerCase()).toContain("nothing is being claimed");
+  });
+
+  it("names both possible causes without asserting which", () => {
+    const body = notFound.body.toLowerCase();
+    expect(body).toContain("permission");
+    expect(body).toContain("no longer exist");
+  });
+
+  it("does not offer a retry for a denial — retrying cannot fix it", () => {
+    expect(notFound.retryable).toBe(false);
+    expect(presentApiError({ code: "forbidden" }).retryable).toBe(false);
+  });
+
+  it("offers a retry for transport and server faults", () => {
+    expect(presentApiError({ code: "network_error" }).retryable).toBe(true);
+    expect(presentApiError({ code: "internal_error" }).retryable).toBe(true);
+    expect(presentApiError({ code: "rate_limited" }).retryable).toBe(true);
+  });
+
+  it("gives a missing rule set its own message rather than a generic failure", () => {
+    const p = presentApiError({ code: "precondition_failed" });
+    expect(p.title.toLowerCase()).toContain("rule set");
+    // It is an environment state, not the seller's account being at fault.
+    expect(p.body.toLowerCase()).not.toContain("permission");
+  });
+
+  it("names the surface it failed to load", () => {
+    expect(presentApiError({ code: "not_found" }, { surface: "your ledger" }).title).toContain(
+      "your ledger",
+    );
+  });
+
+  it("reassures that a failure did not change stored data", () => {
+    expect(presentApiError({ code: "network_error" }).body.toLowerCase()).toContain("unaffected");
+    expect(presentApiError({ code: "internal_error" }).body.toLowerCase()).toContain("unaffected");
   });
 });

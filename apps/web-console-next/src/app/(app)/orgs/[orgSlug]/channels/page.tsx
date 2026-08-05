@@ -42,6 +42,7 @@ import {
   ChannelConnectCard,
   REVOKE_CONFIRMATION,
 } from "@/components/nexus/channel-connect-card";
+import { NexusErrorState } from "@/components/nexus/error-state";
 import { presentDelivery, toneVariant } from "@/components/nexus/nexus";
 import { wrap } from "@/lib/api";
 import { useAsync } from "@/lib/use-async";
@@ -187,12 +188,11 @@ function Inner({ orgId }: { orgId: string }) {
           ))}
         </div>
       ) : channels.error ? (
-        <Card>
-          <CardContent className="p-4">
-            <div className="font-medium text-destructive">{channels.error.code}</div>
-            <div className="text-sm text-muted-foreground">{channels.error.message}</div>
-          </CardContent>
-        </Card>
+        <NexusErrorState
+          error={channels.error}
+          surface="your sales channels"
+          onRetry={channels.reload}
+        />
       ) : rows.length === 0 ? (
         <EmptyState
           icon={Plug}

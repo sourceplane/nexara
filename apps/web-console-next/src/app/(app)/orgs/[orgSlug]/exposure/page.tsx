@@ -20,10 +20,10 @@ import { useParams } from "next/navigation";
 import { Map as MapIcon, RefreshCw, ShieldAlert } from "lucide-react";
 import { OrgScope } from "@/components/shell/org-scope";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ExposureCard } from "@/components/nexus/exposure-card";
+import { NexusErrorState } from "@/components/nexus/error-state";
 import {
   AlertContactCard,
   alertContactState,
@@ -111,12 +111,10 @@ function Inner({ orgId, orgSlug }: { orgId: string; orgSlug: string }) {
           ))}
         </div>
       ) : error ? (
-        <Card>
-          <CardContent className="p-4">
-            <div className="font-medium text-destructive">{error.code}</div>
-            <div className="text-sm text-muted-foreground">{error.message}</div>
-          </CardContent>
-        </Card>
+        // Deliberately an error, not an empty board. "No positions yet" reads
+        // as "you are clear", and a board we could not load must never say
+        // that — see `presentApiError`.
+        <NexusErrorState error={error} surface="your exposure board" onRetry={reload} />
       ) : !data || rows.length === 0 ? (
         <EmptyState
           icon={MapIcon}

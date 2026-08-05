@@ -436,3 +436,103 @@ export function describeBackfill(channel: {
       `is missed while this runs — but positions are incomplete until it finishes.`,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Errors, presented
+// ---------------------------------------------------------------------------
+
+export interface PresentedError {
+  /** Short human title. Never an error code. */
+  title: string;
+  /** One or two sentences saying what happened and what to do. */
+  body: string;
+  /** True when retrying could plausibly succeed (transport / server fault). */
+  retryable: boolean;
+}
+
+/**
+ * Turn an API error into something a seller can act on.
+ *
+ * The console used to render `error.code` — `not_found`, in red, above the word
+ * "Not found". That is a wire enum leaking onto a page, and it tells the person
+ * reading it nothing at all.
+ *
+ * **The `not_found` case is the one that needed a decision.** The platform
+ * authorizes with deny-as-404 (design §7.1): a membership miss and a policy
+ * denial return the same 404 as a genuinely absent org, deliberately, so a
+ * denial is not a membership oracle. That means the client *cannot* tell the
+ * three apart — so the copy must not pretend to.
+ *
+ * It must especially not render as an empty board. "No positions yet" reads as
+ * **you are clear**, and this product does not make that claim without having
+ * measured it — the same reason `list-exposure` returns a 412 for a missing
+ * rule set instead of an empty array. An access failure that renders as
+ * reassurance is the worst possible outcome for a compliance tool.
+ *
+ * So a 404 says plainly that the data could not be read for this organization,
+ * names the likely cause, and claims nothing about the seller's tax position.
+ */
+export function presentApiError(
+  error: { code: string; message?: string },
+  opts: { surface?: string } = {},
+): PresentedError {
+  const surface = opts.surface ?? "this data";
+
+  switch (error.code) {
+    case "not_found":
+      return {
+        title: `We couldn't load ${surface}`,
+        // Not "there is nothing here" — see above.
+        body:
+          "Your account may not have permission to read this organization's tax data, " +
+          "or the organization may no longer exist. Nothing is being claimed about your " +
+          "tax position either way. If you were recently added, ask an owner to confirm your role.",
+        retryable: false,
+      };
+
+    case "precondition_failed":
+      // The real, expected state of an environment with no published rule set.
+      // Worth its own message: it is not a fault of the seller's account.
+      return {
+        title: "No rule set is published yet",
+        body:
+          "Nexara measures against versioned jurisdiction rules, and this environment " +
+          "has none published. Positions cannot be calculated until one is — and an " +
+          "empty board would wrongly read as “you are clear”.",
+        retryable: false,
+      };
+
+    case "forbidden":
+    case "unauthorized":
+      return {
+        title: "You do not have access",
+        body: "Your role does not allow reading this organization's tax data. An owner or admin can change that in Settings → Members.",
+        retryable: false,
+      };
+
+    case "network_error":
+      return {
+        title: "Couldn't reach Nexara",
+        body: "The request did not complete. Your data is unaffected — this is a connection problem, not a change to your ledger.",
+        retryable: true,
+      };
+
+    case "rate_limited":
+      return {
+        title: "Too many requests",
+        body: "Give it a moment and try again.",
+        retryable: true,
+      };
+
+    default:
+      return {
+        title: `We couldn't load ${surface}`,
+        body:
+          (error.message && error.message !== error.code
+            ? `${error.message}. `
+            : "Something went wrong on our side. ") +
+          "Your ledger and determinations are unaffected.",
+        retryable: true,
+      };
+  }
+}

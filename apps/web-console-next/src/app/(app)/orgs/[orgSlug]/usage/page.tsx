@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EmptyState } from "@/components/ui/empty-state";
+import { NexusErrorState } from "@/components/nexus/error-state";
 import {
   Table,
   TableBody,
@@ -181,10 +182,7 @@ function UsageSummary({ orgId }: { orgId: string }) {
             {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
           </div>
         ) : error ? (
-          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4">
-            <div className="font-medium text-destructive">{error.code}</div>
-            <div className="text-sm text-muted-foreground">{error.message}</div>
-          </div>
+          <NexusErrorState error={error} surface="your usage" />
         ) : data && rollups.length > 0 ? (
           <div className="space-y-4">
             <div className="flex flex-wrap gap-6">
@@ -333,10 +331,7 @@ function QuotaViolations({ orgId }: { orgId: string }) {
             {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
           </div>
         ) : error ? (
-          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4">
-            <div className="font-medium text-destructive">{error.code}</div>
-            <div className="text-sm text-muted-foreground">{error.message}</div>
-          </div>
+          <NexusErrorState error={error} surface="your usage" />
         ) : state.violations.length === 0 ? (
           <EmptyState
             icon={AlertTriangle}
