@@ -27,6 +27,13 @@ spec:
     # unbound METERING_WORKER costs a usage row and never a determination — but
     # declared so the binding target exists before this worker deploys.
     - component: metering-worker
+    # Shared workspace packages this component BUNDLES. Declared so a change
+    # to one marks this component changed and redeploys it — without the
+    # edge, `orun plan --changed` keys on `path:` alone and a worker can run
+    # a months-old copy of a package that has since changed underneath it.
+    - component: contracts
+    - component: db
+    - component: notifications-client
   # BF6 wiring documents from orun secrets (SEC-JOB): lease-published by
   # the infra components; wire-live renders the wrangler template from
   # these instead of Secrets Manager documents.

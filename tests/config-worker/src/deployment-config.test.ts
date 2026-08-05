@@ -255,3 +255,68 @@ describe("every wrangler service binding is a declared dependsOn edge", () => {
   }
 });
 
+
+// ---------------------------------------------------------------------------
+// Bundled shared packages must be declared dependsOn edges
+// ---------------------------------------------------------------------------
+
+/**
+ * The sibling of the service-binding invariant above, and it exists because
+ * its absence shipped a real outage.
+ *
+ * `orun plan --changed` decides what to redeploy from each component's own
+ * `path:`. A worker bundles its workspace packages at build time, so a change
+ * to `packages/policy-engine` does NOT mark `apps/policy-worker` changed — and
+ * `policy-worker` is a thin wrapper whose own files rarely move.
+ *
+ * The result: NX1 added `organization.nexus.read` to the policy engine and
+ * `policy-worker` was never redeployed. Its live bundle went on denying an
+ * action it had never heard of, deny-as-404 turned that into `not_found`, and
+ * every nexus surface in the console failed for every organization — while
+ * every test passed, because tests compile the current source rather than what
+ * is deployed.
+ *
+ * Declaring the edge makes a package change mark its consumers changed. This
+ * test keeps the declaration honest as dependencies come and go.
+ */
+describe("every bundled workspace package is a declared dependsOn edge", () => {
+  /** `@saas/<pkg>` → orun component name, for packages that ARE components. */
+  const packageComponents = new Map<string, string>();
+  for (const dir of fs.readdirSync(path.join(ROOT, "packages"))) {
+    const compPath = path.join(ROOT, "packages", dir, "component.yaml");
+    const pkgPath = path.join(ROOT, "packages", dir, "package.json");
+    if (!fs.existsSync(compPath) || !fs.existsSync(pkgPath)) continue;
+    const name = /^ {2}name:\s*(\S+)/m.exec(fs.readFileSync(compPath, "utf8"))?.[1];
+    const pkgName = (JSON.parse(fs.readFileSync(pkgPath, "utf8")) as { name?: string }).name;
+    if (name && pkgName) packageComponents.set(pkgName, name);
+  }
+
+  it("finds the package components at all (the map is not silently empty)", () => {
+    expect(packageComponents.size).toBeGreaterThan(3);
+    expect(packageComponents.get("@saas/policy-engine")).toBe("policy-engine");
+  });
+
+  for (const app of fs.readdirSync(path.join(ROOT, "apps"))) {
+    const compPath = path.join(ROOT, "apps", app, "component.yaml");
+    const pkgPath = path.join(ROOT, "apps", app, "package.json");
+    if (!fs.existsSync(compPath) || !fs.existsSync(pkgPath)) continue;
+
+    it(`${app} declares every package component it bundles`, () => {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8")) as {
+        dependencies?: Record<string, string>;
+        devDependencies?: Record<string, string>;
+      };
+      const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+      const needed = new Set<string>();
+      for (const dep of Object.keys(deps)) {
+        const component = packageComponents.get(dep);
+        if (component) needed.add(component);
+      }
+
+      const declared = new Set(
+        [...fs.readFileSync(compPath, "utf8").matchAll(/component: ([a-z-]+)/g)].map((m) => m[1]!),
+      );
+      expect([...needed].filter((n) => !declared.has(n)).sort()).toEqual([]);
+    });
+  }
+});

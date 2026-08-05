@@ -17,6 +17,12 @@ spec:
   dependsOn:
     - component: membership-worker
     - component: policy-worker
+    # Shared workspace packages this component BUNDLES. Declared so a change
+    # to one marks this component changed and redeploys it — without the
+    # edge, `orun plan --changed` keys on `path:` alone and a worker can run
+    # a months-old copy of a package that has since changed underneath it.
+    - component: contracts
+    - component: db
   # Runtime secrets, wire-now-seed-later: best-effort references —
   # an unseeded key is skipped at resolve (and by secrets-live), so
   # this block is inert until the value is stored in orun secrets.
