@@ -25,6 +25,11 @@ import { asUuid, type Uuid } from "@saas/db/ids";
 
 import type { Env } from "./env.js";
 import { isKnownProvider, resolveProvider } from "./providers/registry.js";
+import { orgPublicId } from "./ids.js";
+import { reportBatchUsage } from "./metering-client.js";
+
+/** The metered dimension, named identically in `nexus-worker/entitlements.ts`. */
+const METRIC_SALE_EVENTS = "sale_events_ingested";
 
 export const BATCH_SIZE = 50;
 export const MAX_ATTEMPTS = 5;
@@ -56,6 +61,12 @@ export interface DrainSummary {
   /** NX1.5 S-8 / R9: a re-delivery whose money differs from what is stored. */
   divergent: number;
   payloadsPurged: number;
+  /** Orgs whose ingested-event counter was accepted by metering this tick. */
+  usageRecorded: number;
+  /** Reports metering already held for this exact batch — a retried tick. */
+  usageDuplicates: number;
+  /** Reports that did not land. Never a drain failure: see below. */
+  usageFailures: number;
 }
 
 export async function drainInbox(
@@ -66,7 +77,14 @@ export async function drainInbox(
   const summary: DrainSummary = {
     processed: 0, applied: 0, skipped: 0, retried: 0, failed: 0,
     eventsAppended: 0, duplicates: 0, divergent: 0, payloadsPurged: 0,
+    usageRecorded: 0, usageDuplicates: 0, usageFailures: 0,
   };
+
+  // Per-org accumulators for this tick. Usage is reported ONCE per org after
+  // the batch rather than per delivery: a delivery-sized report would spend a
+  // subrequest per row and hit the Workers subrequest ceiling on a busy tick.
+  const perOrgEvents = new Map<string, number>();
+  const perOrgDeliveries = new Map<string, string[]>();
 
   const channels = createChannelsRepository(executor);
   const claimed = await channels.claimDueDeliveries(BATCH_SIZE, now);
@@ -82,6 +100,12 @@ export async function drainInbox(
           summary.eventsAppended += outcome.applied;
           summary.duplicates += outcome.duplicates;
           summary.divergent += outcome.divergent;
+          perOrgEvents.set(outcome.orgId, (perOrgEvents.get(outcome.orgId) ?? 0) + outcome.applied);
+          {
+            const ids = perOrgDeliveries.get(outcome.orgId) ?? [];
+            ids.push(delivery.id);
+            perOrgDeliveries.set(outcome.orgId, ids);
+          }
           break;
         case "skipped":
           summary.skipped += 1;
@@ -119,11 +143,38 @@ export async function drainInbox(
   const purged = await channels.purgeExpiredPayloads(RETENTION, now, PURGE_BATCH);
   if (purged.ok) summary.payloadsPurged = purged.value;
 
+  // Usage reporting is LAST and its outcome is only counted. Every event is
+  // already committed to the ledger by this point, so a metering outage costs
+  // a usage row and nothing else — the same direction the entitlement gate
+  // fails, and for the same reason: a billing question must never break
+  // ingestion.
+  //
+  // Keyed on the batch rather than the clock. The drain runs every minute with
+  // a different batch each time, and an hour-keyed counter would record the
+  // first tick and silently discard the other fifty-nine.
+  for (const [orgId, count] of perOrgEvents) {
+    if (count === 0) continue;
+    const outcome = await reportBatchUsage(
+      env.METERING_WORKER,
+      orgPublicId(orgId),
+      METRIC_SALE_EVENTS,
+      count,
+      perOrgDeliveries.get(orgId) ?? [],
+      now,
+      `drain_${now.toISOString()}`,
+    );
+    if (outcome.kind === "recorded") summary.usageRecorded += 1;
+    else if (outcome.kind === "duplicate") summary.usageDuplicates += 1;
+    else summary.usageFailures += 1;
+  }
+
   return summary;
 }
 
 type Outcome =
-  | { kind: "applied"; applied: number; duplicates: number; divergent: number }
+  // `orgId` rides along so the drain can aggregate usage per tenant without a
+  // second lookup — one batch spans many orgs and metering is reported per org.
+  | { kind: "applied"; applied: number; duplicates: number; divergent: number; orgId: string }
   | { kind: "skipped"; reason: string }
   | { kind: "retried" }
   | { kind: "failed"; reason: string };
@@ -216,6 +267,7 @@ async function processOne(
     applied: result.applied,
     duplicates: result.duplicates,
     divergent: result.divergent.length,
+    orgId: attribution.orgId,
   };
 }
 

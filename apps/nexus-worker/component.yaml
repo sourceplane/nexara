@@ -23,6 +23,10 @@ spec:
     # unbound BILLING_WORKER monitors every jurisdiction rather than none — but
     # declared here so the binding target exists before this worker deploys.
     - component: billing-worker
+    # §9 usage reporting from the evaluation cron. Optional at runtime — an
+    # unbound METERING_WORKER costs a usage row and never a determination — but
+    # declared so the binding target exists before this worker deploys.
+    - component: metering-worker
   # BF6 wiring documents from orun secrets (SEC-JOB): lease-published by
   # the infra components; wire-live renders the wrangler template from
   # these instead of Secrets Manager documents.

@@ -5,8 +5,10 @@ import { handleIngestBatch } from "./handlers/ingest-batch.js";
 import { handleGetUsageSummary } from "./handlers/get-usage-summary.js";
 import { handleCheckQuota } from "./handlers/check-quota.js";
 import { handleListQuotaViolations } from "./handlers/list-quota-violations.js";
+import { handleRecordInternalUsage } from "./handlers/record-internal-usage.js";
 import { errorResponse, notFound, methodNotAllowed } from "./http.js";
 import { generateRequestId, parseOrgPublicId } from "./ids.js";
+import { INTERNAL_CALLER_HEADER, isAllowedInternalCaller } from "./internal-callers.js";
 
 const REQUEST_ID_RE = /^[\w-]{1,128}$/;
 
@@ -88,6 +90,24 @@ export async function route(request: Request, env: Env): Promise<Response> {
   try {
     if (url.pathname === "/health" && request.method === "GET") {
       return handleHealth(env, requestId);
+    }
+
+    // Internal usage-recording seam (service-binding only). Matched BEFORE
+    // `matchRoute` because it deliberately does not resolve an actor: its
+    // callers are scheduled jobs and webhook drains that have no session to
+    // resolve one from. Provenance is the allow-list, checked before any
+    // repository access so an unknown binding fails closed.
+    //
+    // Unreachable from the public internet: the api-edge metering facade
+    // matches only `/v1/organizations/…` paths, so nothing outside the trust
+    // boundary can route here.
+    if (url.pathname === "/v1/internal/metering/usage") {
+      if (request.method !== "POST") return methodNotAllowed(requestId);
+      const caller = request.headers.get(INTERNAL_CALLER_HEADER);
+      if (!isAllowedInternalCaller(caller)) {
+        return errorResponse("unauthorized", "Unauthorized", 403, requestId);
+      }
+      return handleRecordInternalUsage(request, env, requestId);
     }
 
     const matched = matchRoute(url.pathname);
