@@ -4,7 +4,6 @@ import { createIdentityRepository } from "@saas/db/identity";
 import { createAuthService } from "../services/auth.js";
 import { successResponse, errorResponse, validationError } from "../http.js";
 import { extractRequestContext } from "../request-context.js";
-import { ensurePersonalOrg } from "../solo-mode.js";
 
 const CODE_RE = /^\d{6}$/;
 
@@ -53,10 +52,6 @@ export async function handleLoginComplete(request: Request, env: Env, requestId:
       };
       return errorResponse(result.error, result.message, statusMap[result.error] ?? 500, requestId);
     }
-
-    // M0 / Solo profile: ensure the user's one invisible personal workspace
-    // exists before the console loads. No-op (and zero latency) off the profile.
-    await ensurePersonalOrg(env, requestId, result.user);
 
     return successResponse(
       {

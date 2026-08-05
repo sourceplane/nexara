@@ -25,7 +25,6 @@ import {
   handleIntegrationsRoute,
   handleIntegrationsIngressRoute,
 } from "./integrations-facade";
-import { isSoloMode, isSoloSuppressed } from "./solo-mode";
 
 // Durable Object class backing the PERF5 Stage B rate-limit counters. Must be
 // exported from the Worker entry so the runtime can instantiate it for the
@@ -44,12 +43,6 @@ export default {
 
     if (url.pathname === "/health") {
       response = await handleHealth(env);
-    } else if (isSoloMode(env) && isSoloSuppressed(url.pathname, request.method)) {
-      // M0 / Solo profile: org/team/project and platform-plumbing surfaces are
-      // hidden. Suppress at the edge before any facade dispatch — the route
-      // reads as "not found" to the single-user surface. Flip SOLO_MODE off and
-      // this branch is dead, restoring the full baseline. (See ./solo-mode.ts.)
-      response = notFound(requestId, url.pathname);
     } else if (isAuthRoute(url.pathname)) {
       response = await handleAuthRoute(request, env, requestId, url.pathname);
     } else if (isAuditRoute(url.pathname)) {

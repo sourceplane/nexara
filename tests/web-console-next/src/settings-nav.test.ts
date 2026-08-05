@@ -38,20 +38,17 @@ describe("buildSettingsNav", () => {
   });
 });
 
-describe("buildSettingsNav under the Solo (M0) profile", () => {
-  const solo = () => buildSettingsNav("acme", true);
-
-  it("relabels the org group to 'Account' and drops the empty Developer-less surfaces", () => {
-    const groups = solo();
-    const byId = Object.fromEntries(groups.map((g) => [g.id, g]));
-    expect(byId["organization"]!.label).toBe("Account");
-    // Billing is kept; Developer survives only because Config remains.
-    expect(groups.map((g) => g.id)).toEqual(["organization", "billing", "developer"]);
+// Solo mode is decommissioned. The settings nav has one shape, and the
+// collaboration and credential surfaces it used to hide are part of it again:
+// an accounting firm managing several sellers needs members and API keys.
+describe("buildSettingsNav has a single unconditional shape", () => {
+  it("takes only an org slug — no profile argument", () => {
+    expect(buildSettingsNav.length).toBe(1);
   });
 
-  it("hides members, invitations, api-keys, webhooks, integrations, and audit", () => {
-    const hrefs = flattenSettingsNav(solo()).map((l) => l.href);
-    for (const suppressed of [
+  it("restores the collaboration and credential surfaces Solo suppressed", () => {
+    const hrefs = flattenSettingsNav(buildSettingsNav("acme")).map((l) => l.href);
+    for (const restored of [
       "/orgs/acme/settings/members",
       "/orgs/acme/settings/invitations",
       "/orgs/acme/settings/api-keys",
@@ -59,29 +56,15 @@ describe("buildSettingsNav under the Solo (M0) profile", () => {
       "/orgs/acme/settings/integrations",
       "/orgs/acme/settings/audit",
     ]) {
-      expect(hrefs).not.toContain(suppressed);
+      expect(hrefs).toContain(restored);
     }
   });
 
-  it("keeps the single-user surfaces: General, Notifications, Billing, Config", () => {
-    const hrefs = flattenSettingsNav(solo()).map((l) => l.href);
-    expect(hrefs).toEqual(
-      expect.arrayContaining([
-        "/orgs/acme/settings", // General
-        "/orgs/acme/settings/notifications",
-        "/orgs/acme/settings/billing",
-        "/orgs/acme/settings/config",
-      ]),
-    );
-  });
-
-  it("is identical to the baseline when soloMode is false", () => {
-    expect(buildSettingsNav("acme", false)).toEqual(buildSettingsNav("acme", false));
-    expect(buildSettingsNav("acme", false).map((g) => g.id)).toEqual([
-      "organization",
-      "billing",
-      "developer",
-    ]);
+  it("labels the org group 'Organization', never 'Account'", () => {
+    const groups = buildSettingsNav("acme");
+    const byId = Object.fromEntries(groups.map((g) => [g.id, g]));
+    expect(byId["organization"]!.label).toBe("Organization");
+    expect(groups.map((g) => g.label)).not.toContain("Account");
   });
 });
 

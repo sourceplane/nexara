@@ -24,8 +24,4 @@ export interface Env {
   RATE_LIMITER_DO?: DurableObjectNamespace;
   ENVIRONMENT: string;
   CONSOLE_CUSTOM_DOMAIN?: string;
-  // M0 / Solo profile switch. "true" runs the single-user B2C profile (see
-  // ./solo-mode.ts); absent or any other value keeps the full multi-tenant
-  // baseline. Deploy-time wrangler var, not a secret.
-  SOLO_MODE?: string;
 }

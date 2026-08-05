@@ -4,23 +4,24 @@ import {
 } from "@web-console-next/lib/last-org";
 
 describe("defaultOrgDestination", () => {
-  it("routes to the last-used org's projects when one is remembered", () => {
-    expect(defaultOrgDestination("acme")).toBe("/orgs/acme/projects");
+  // The board, not a settings or admin page. A seller signs in to answer one
+  // question, and a landing page that makes them navigate to it has put
+  // administration in front of the answer.
+  it("routes to the last-used org's exposure board when one is remembered", () => {
+    expect(defaultOrgDestination("acme")).toBe("/orgs/acme/exposure");
   });
 
   it("falls back to onboarding when none is remembered — there is no org-less landing view", () => {
     expect(defaultOrgDestination(null)).toBe("/onboarding");
   });
 
-  it("Solo: lands on the Account (settings) surface, not projects", () => {
-    expect(defaultOrgDestination("acme", true)).toBe("/orgs/acme/settings");
-    // No remembered org still routes to onboarding (which forwards to the
-    // auto-provisioned personal org once it loads).
-    expect(defaultOrgDestination(null, true)).toBe("/onboarding");
-  });
-
-  it("baseline (soloMode=false) still lands on projects", () => {
-    expect(defaultOrgDestination("acme", false)).toBe("/orgs/acme/projects");
+  // Solo mode is decommissioned: there is no second parameter and no profile
+  // that lands anywhere else. Extra args must not change the destination.
+  it("takes no profile argument — the destination is unconditional", () => {
+    expect(defaultOrgDestination.length).toBe(1);
+    expect((defaultOrgDestination as (s: string | null, x?: unknown) => string)("acme", true)).toBe(
+      "/orgs/acme/exposure",
+    );
   });
 });
 
@@ -40,7 +41,7 @@ describe("resolvePostAuthDestination", () => {
       auth: profile("acme"),
       organizations: { list: async () => ({ organizations: [] }) },
     });
-    expect(dest).toBe("/orgs/acme/projects");
+    expect(dest).toBe("/orgs/acme/exposure");
   });
 
   it("sends a first sign-in (no orgs) to mandatory onboarding", async () => {
@@ -63,7 +64,7 @@ describe("resolvePostAuthDestination", () => {
         }),
       },
     });
-    expect(dest).toBe("/orgs/alpha/projects");
+    expect(dest).toBe("/orgs/alpha/exposure");
   });
 
   it("still resolves via the org list when the profile read fails", async () => {
@@ -73,7 +74,7 @@ describe("resolvePostAuthDestination", () => {
         list: async () => ({ organizations: [org("org_a", "alpha", "2026-01-01T00:00:00Z")] }),
       },
     });
-    expect(dest).toBe("/orgs/alpha/projects");
+    expect(dest).toBe("/orgs/alpha/exposure");
   });
 
   it("falls back to the local cache (empty here) when every read fails", async () => {

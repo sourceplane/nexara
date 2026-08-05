@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
-import { SOLO_MODE } from "@/lib/solo-mode";
 
 export default function OrgRoot({ params }: { params: { orgSlug: string } }) {
-  // The org root resolves to the profile's home surface. Baseline → Projects;
-  // Solo → the Account (settings) surface, since projects are suppressed.
-  redirect(`/orgs/${params.orgSlug}/${SOLO_MODE ? "settings" : "projects"}`);
+  // The org root is the exposure board. It is the product's home surface: the
+  // one question a seller signs in to answer is which states they have crossed.
+  redirect(`/orgs/${params.orgSlug}/exposure`);
 }

@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { CopyButton } from "@/components/ui/copy-button";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { PRODUCT_NAME } from "@/lib/app-config";
-import { TENANT_NOUN } from "@/lib/solo-mode";
 
 export default function OrgSettingsPage() {
   const params = useParams<{ orgSlug: string }>();
@@ -17,8 +16,7 @@ export default function OrgSettingsPage() {
 }
 
 function Inner({ org }: { org: { id: string; name: string; slug: string } }) {
-  // Solo relabels the tenant noun: in M0 the org reads as the user's "Account".
-  const noun = TENANT_NOUN; // "Organization" (baseline) | "Account" (solo)
+  const noun = "Organization";
   const nounLower = noun.toLowerCase();
   return (
     <div className="space-y-6">

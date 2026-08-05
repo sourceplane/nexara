@@ -5,8 +5,6 @@
  * (the Sheet drawer on small screens). Icon resolution happens in the renderer.
  */
 
-import { SOLO_MODE } from "../../lib/solo-mode";
-
 export interface NavLink {
   href: string;
   label: string;
@@ -29,37 +27,20 @@ export interface NavScope {
 }
 
 /**
- * Build the sidebar sections for the current URL scope. Org and project
- * sections only appear when their slug is present, matching the URL-driven
- * scope invariant (no local navigation state).
+ * Build the sidebar sections for the current URL scope. The org section only
+ * appears when a slug is present, matching the URL-driven scope invariant (no
+ * local navigation state).
  *
- * Under the M0/Solo profile (`soloMode`) the org reads as the user's "Account":
- * projects and usage/quota are suppressed (hidden at the API edge too), the
- * section is relabelled, and project scope never appears. Defaults to the build
- * flag, so callers are unchanged; tests pass it explicitly for both profiles.
+ * The order is the order a seller works: the board first, then the evidence
+ * behind it, then the plumbing that feeds it, then what it costs. There is no
+ * project scope — Nexara measures an organization's sales against published
+ * thresholds, and "projects" was a developer-platform concept inherited from
+ * the starter this repo grew out of, with nothing to name in this product.
  */
-/**
- * The nexus surfaces, in the order a seller works them: the board first,
- * then the evidence behind it, then the plumbing that feeds it.
- *
- * They lead the org section under both profiles because they are the product.
- * Projects and usage are platform plumbing beneath them.
- */
-function NEXUS_LINKS(orgBase: string): NavLink[] {
-  return [
-    { href: `${orgBase}/exposure`, label: "Exposure", icon: "Map" },
-    { href: `${orgBase}/registrations`, label: "Registrations", icon: "Stamp" },
-    { href: `${orgBase}/ledger`, label: "Ledger", icon: "Receipt" },
-    { href: `${orgBase}/channels`, label: "Channels", icon: "Plug" },
-  ];
-}
-
-export function buildNavSections(scope: NavScope, soloMode: boolean = SOLO_MODE): NavSection[] {
+export function buildNavSections(scope: NavScope): NavSection[] {
   const sections: NavSection[] = [];
   const orgSlug = scope.orgSlug ?? null;
-  const projectSlug = scope.projectSlug ?? null;
   const orgBase = orgSlug ? `/orgs/${orgSlug}` : null;
-  const projectBase = orgSlug && projectSlug ? `/orgs/${orgSlug}/projects/${projectSlug}` : null;
 
   // The Workspace/Organizations section is intentionally omitted: the org
   // switcher at the top of the sidebar is the home for org selection (and links
@@ -76,33 +57,15 @@ export function buildNavSections(scope: NavScope, soloMode: boolean = SOLO_MODE)
     // secondary navigation (see `settings-nav.ts`).
     sections.push({
       id: "org",
-      label: soloMode ? "Account" : orgSlug ? `Org · ${orgSlug}` : "Organization",
-      links: soloMode
-        ? [
-            ...NEXUS_LINKS(orgBase),
-            // Solo: projects & usage/quota are platform plumbing the B2C user
-            // never sees; their surfaces collapse to the Settings (Account) panel.
-            { href: `${orgBase}/settings`, label: "Settings", icon: "Settings", subPanel: true },
-          ]
-        : [
-            ...NEXUS_LINKS(orgBase),
-            { href: `${orgBase}/projects`, label: "Projects", icon: "FolderKanban" },
-            { href: `${orgBase}/usage`, label: "Usage & quota", icon: "Gauge" },
-            // Opens the dedicated settings panel — flagged so the renderer shows a ›.
-            { href: `${orgBase}/settings`, label: "Settings", icon: "Settings", subPanel: true },
-          ],
-    });
-  }
-
-  // Project scope is suppressed entirely under Solo (no projects exist).
-  if (projectBase && !soloMode) {
-    sections.push({
-      id: "project",
-      label: projectSlug ? `Project · ${projectSlug}` : "Project",
+      label: orgSlug ? `Org · ${orgSlug}` : "Organization",
       links: [
-        { href: `${projectBase}/environments`, label: "Environments", icon: "Boxes" },
-        { href: `${projectBase}/git`, label: "Git", icon: "GitBranch" },
-        { href: `${projectBase}/config`, label: "Config", icon: "SlidersHorizontal" },
+        { href: `${orgBase}/exposure`, label: "Exposure", icon: "Map" },
+        { href: `${orgBase}/registrations`, label: "Registrations", icon: "Stamp" },
+        { href: `${orgBase}/ledger`, label: "Ledger", icon: "Receipt" },
+        { href: `${orgBase}/channels`, label: "Channels", icon: "Plug" },
+        { href: `${orgBase}/usage`, label: "Usage & quota", icon: "Gauge" },
+        // Opens the dedicated settings panel — flagged so the renderer shows a ›.
+        { href: `${orgBase}/settings`, label: "Settings", icon: "Settings", subPanel: true },
       ],
     });
   }

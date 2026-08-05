@@ -15,26 +15,31 @@ describe("buildNavSections", () => {
     const org = buildNavSections({ orgSlug: "acme" }).find((s) => s.id === "org")!;
     const settings = org.links.find((l) => l.href === "/orgs/acme/settings")!;
     expect(settings.subPanel).toBe(true);
-    const projects = org.links.find((l) => l.href === "/orgs/acme/projects")!;
-    expect(projects.subPanel ?? false).toBe(false);
+    const exposure = org.links.find((l) => l.href === "/orgs/acme/exposure")!;
+    expect(exposure.subPanel ?? false).toBe(false);
   });
 
   it("returns no sections when there is no org scope", () => {
     expect(buildNavSections({})).toHaveLength(0);
   });
 
-  it("omits org/project sections without slugs", () => {
+  it("omits the org section without a slug", () => {
     const ids = buildNavSections({}).map((s) => s.id);
     expect(ids).not.toContain("org");
-    expect(ids).not.toContain("project");
   });
 
-  it("adds a product-focused org section when orgSlug is present", () => {
+  // The whole nav, pinned in order. The board leads because it is the product;
+  // anything that pushes it down is a regression worth failing a build over.
+  it("is the product navigation, in the order a seller works it", () => {
     const org = buildNavSections({ orgSlug: "acme" }).find((s) => s.id === "org")!;
-    const hrefs = org.links.map((l) => l.href);
-    expect(hrefs).toContain("/orgs/acme/projects");
-    expect(hrefs).toContain("/orgs/acme/usage");
-    expect(hrefs).toContain("/orgs/acme/settings");
+    expect(org.links.map((l) => l.href)).toEqual([
+      "/orgs/acme/exposure",
+      "/orgs/acme/registrations",
+      "/orgs/acme/ledger",
+      "/orgs/acme/channels",
+      "/orgs/acme/usage",
+      "/orgs/acme/settings",
+    ]);
     expect(org.label).toBe("Org · acme");
   });
 
@@ -53,56 +58,21 @@ describe("buildNavSections", () => {
     expect(isLinkActive("/orgs/acme/settings", "/orgs/acme/settings/members")).toBe(true);
   });
 
-  it("adds the project section only when both slugs are present", () => {
-    expect(buildNavSections({ orgSlug: "acme" }).find((s) => s.id === "project")).toBeUndefined();
-    const project = buildNavSections({ orgSlug: "acme", projectSlug: "web" }).find((s) => s.id === "project")!;
-    expect(project.links[0]!.href).toBe("/orgs/acme/projects/web/environments");
-  });
-});
-
-describe("buildNavSections under the Solo (M0) profile", () => {
-  it("relabels the org section to 'Account' and drops Projects + Usage", () => {
-    const org = buildNavSections({ orgSlug: "acme" }, true).find((s) => s.id === "org")!;
-    expect(org.label).toBe("Account");
-    const hrefs = org.links.map((l) => l.href);
-    // The nexus surfaces ARE the product and survive Solo; projects and usage
-    // are platform plumbing a B2C seller never sees.
-    expect(hrefs).toEqual([
-      "/orgs/acme/exposure",
-      "/orgs/acme/registrations",
-      "/orgs/acme/ledger",
-      "/orgs/acme/channels",
-      "/orgs/acme/settings",
-    ]);
-    expect(hrefs).not.toContain("/orgs/acme/projects");
-    expect(hrefs).not.toContain("/orgs/acme/usage");
-  });
-
-  it("suppresses the project section even when a project slug is present", () => {
-    const sections = buildNavSections({ orgSlug: "acme", projectSlug: "web" }, true);
-    expect(sections.find((s) => s.id === "project")).toBeUndefined();
-  });
-
-  it("keeps the full baseline section when soloMode is false", () => {
-    const org = buildNavSections({ orgSlug: "acme" }, false).find((s) => s.id === "org")!;
-    expect(org.label).toBe("Org · acme");
-    expect(org.links.map((l) => l.href)).toEqual([
-      // Nexus leads: the board is what an operator opens the console for.
-      "/orgs/acme/exposure",
-      "/orgs/acme/registrations",
-      "/orgs/acme/ledger",
-      "/orgs/acme/channels",
-      "/orgs/acme/projects",
-      "/orgs/acme/usage",
-      "/orgs/acme/settings",
-    ]);
+  // "Projects" was a developer-platform concept inherited from the starter this
+  // repo grew out of. Nexara measures an organization's sales against published
+  // thresholds; there is nothing for a project to name.
+  it("never renders a project section or any project link", () => {
+    const withProjectScope = buildNavSections({ orgSlug: "acme", projectSlug: "web" });
+    expect(withProjectScope.find((s) => s.id === "project")).toBeUndefined();
+    const hrefs = withProjectScope.flatMap((s) => s.links.map((l) => l.href));
+    expect(hrefs.some((h) => h.includes("/projects"))).toBe(false);
   });
 });
 
 describe("isLinkActive", () => {
   it("matches /orgs only exactly (not nested org pages)", () => {
     expect(isLinkActive("/orgs", "/orgs")).toBe(true);
-    expect(isLinkActive("/orgs", "/orgs/acme/projects")).toBe(false);
+    expect(isLinkActive("/orgs", "/orgs/acme/exposure")).toBe(false);
   });
 
   it("matches /account exactly so it does not swallow /account/security", () => {

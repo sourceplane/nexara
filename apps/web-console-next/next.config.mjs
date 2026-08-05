@@ -38,10 +38,6 @@ const nextConfig = {
   },
   env: {
     NEXT_PUBLIC_DEPLOY_ENV: process.env.NEXT_PUBLIC_DEPLOY_ENV ?? "",
-    // M0 / Solo profile (Nexara ships single-user). Build with
-    // NEXT_PUBLIC_SOLO_MODE=false to restore the full multi-tenant baseline.
-    // See specs/profiles/solo-m0.md.
-    NEXT_PUBLIC_SOLO_MODE: process.env.NEXT_PUBLIC_SOLO_MODE ?? "true",
   },
 };
 
