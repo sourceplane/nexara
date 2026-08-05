@@ -153,6 +153,43 @@ This is the case the product exists for, and it needs no special tooling.
    corrected attribution) — and the old determination still stands as the
    record of what was known then. That is the point of not updating in place.
 
+## A whole surface reads "we couldn't load this"
+
+The console shows an error card — *"We couldn't load your exposure board"* —
+on every nexus page for an organization, while the org itself still appears in
+the switcher.
+
+That combination is authorization, not data. The sidebar is populated from
+`membership.organization_members`; the gate reads
+`membership.role_assignments`. **An org can appear in the switcher while the
+subject has no role assignment in it**, and the gate then denies.
+
+Every denial returns an identical 404 on purpose — a distinguishable response
+would be a membership oracle — so do not try to tell the causes apart from the
+wire. The reason is in the log instead:
+
+```
+{"level":"warn","msg":"nexus.authz_denied","reason":"…","action":"organization.nexus.read",
+ "orgId":"org_…","subjectType":"user","subjectId":"usr_…"}
+```
+
+| `reason` | What it means | Fix |
+|---|---|---|
+| `membership_unavailable` | no role assignment for this subject in this org, **or** membership-worker was unreachable | check `membership.role_assignments` for the pair; if the row is missing, re-add the member in Settings → Members. If it is missing for *every* member of the org, the org was created by a path that skipped the role assignment — see below |
+| `policy_denied` | the role exists but does not grant this action | the role is too narrow; check the §7.2 matrix in `packages/policy-engine` against the `action` field |
+
+`reason` is `membership_unavailable` for **every** subject in an org → suspect
+provisioning rather than roles. `create-organization` writes the member row and
+the `owner` role assignment in one transaction, so a normally-created org has
+both; an org with one and not the other was created some other way. The
+decommissioned Solo profile's `ensurePersonalOrg` was exactly such a path — it
+POSTed the org and swallowed every error, checking nothing — so
+`personal-…`-slugged orgs from that era are the first place to look.
+
+The fastest confirmation is to create a fresh organization through
+`/onboarding` and load its board. If the new org works and the old one does
+not, it is that org's rows, not the code.
+
 ## Support needs to look at a tenant
 
 `GET /v1/internal/support/organizations/:orgId/nexus` returns that tenant's
