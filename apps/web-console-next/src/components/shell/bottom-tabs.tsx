@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-import { Building2, FolderKanban, Gauge, Settings, User2, type LucideIcon } from "lucide-react";
+import { Building2, Map, Plug, Receipt, Settings, User2, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { isLinkActive } from "./nav-items";
 
@@ -26,9 +26,11 @@ export function BottomTabs() {
 
   const tabs: Tab[] = orgSlug
     ? [
-        { href: "/orgs", label: "Orgs", icon: Building2 },
-        { href: `/orgs/${orgSlug}/projects`, label: "Projects", icon: FolderKanban },
-        { href: `/orgs/${orgSlug}/usage`, label: "Usage", icon: Gauge },
+        // The board leads on mobile for the same reason it leads in the
+        // sidebar: it is the answer the seller opened the app for.
+        { href: `/orgs/${orgSlug}/exposure`, label: "Exposure", icon: Map },
+        { href: `/orgs/${orgSlug}/ledger`, label: "Ledger", icon: Receipt },
+        { href: `/orgs/${orgSlug}/channels`, label: "Channels", icon: Plug },
         { href: `/orgs/${orgSlug}/settings`, label: "Settings", icon: Settings },
       ]
     : [

@@ -14,7 +14,6 @@ import {
 } from "../oauth/config.js";
 import { getConfiguredProvider, type OAuthProvider } from "../oauth/providers.js";
 import { verifyState } from "../oauth/state.js";
-import { ensurePersonalOrg } from "../solo-mode.js";
 
 const CALLBACK_RE = /^\/v1\/auth\/oauth\/([^/]+)\/callback$/;
 
@@ -133,10 +132,6 @@ export async function handleOAuthCallback(
           : "server_error";
       return redirectToConsole(state.r, `error=${reason}`);
     }
-
-    // M0 / Solo profile: provision the user's invisible personal workspace
-    // before handing the token back to the console. No-op off the profile.
-    await ensurePersonalOrg(env, requestId, result.user);
 
     const fragment =
       `token=${encodeURIComponent(result.token)}` +

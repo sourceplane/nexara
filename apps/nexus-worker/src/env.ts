@@ -25,5 +25,12 @@ export interface Env {
   /** Service binding to billing-worker for the §9 plan-limit check. Optional:
    *  an unbound environment monitors every jurisdiction rather than none. */
   BILLING_WORKER?: Fetcher;
+  /**
+   * Service binding to metering-worker for §9 usage reporting. Optional, and
+   * absence is silent by design: usage is bookkeeping downstream of the
+   * determination, so an unbound (or failing) metering worker must cost an org
+   * its usage row and never its measurement.
+   */
+  METERING_WORKER?: Fetcher;
   NEXUS_ALERT_EMAIL?: string;
 }

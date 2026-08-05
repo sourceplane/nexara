@@ -9,7 +9,6 @@ import {
 
 const baseCtx: CommandContext = {
   orgSlug: null,
-  projectSlug: null,
   isLocked: false,
   targets: [{ name: "stage" }, { name: "prod" }],
 };
@@ -31,7 +30,7 @@ describe("buildBaseCommands", () => {
   it("adds org-scoped commands when orgSlug is present", () => {
     const cmds = buildBaseCommands({ ...baseCtx, orgSlug: "acme" });
     const byId = new Map(cmds.map((c) => [c.id, c]));
-    expect(byId.has("nav.projects")).toBe(true);
+    expect(byId.has("nav.exposure")).toBe(true);
     expect(byId.has("nav.billing")).toBe(true);
     const billing = byId.get("nav.billing")!;
     expect(billing.kind).toBe("navigate");
@@ -52,11 +51,23 @@ describe("buildBaseCommands", () => {
     if (invite.kind === "navigate") expect(invite.to).toBe("/orgs/acme/settings/invitations?new=1");
   });
 
-  it("adds project-scoped commands only when both org and project slugs are present", () => {
-    const orgOnly = buildBaseCommands({ ...baseCtx, orgSlug: "acme" }).map((c) => c.id);
-    expect(orgOnly).not.toContain("nav.environments");
-    const both = buildBaseCommands({ ...baseCtx, orgSlug: "acme", projectSlug: "web" }).map((c) => c.id);
-    expect(both).toContain("nav.environments");
+  // The project tree is gone from the product, so the palette must not offer
+  // a way back into it — a command that navigates to a deleted route is a 404
+  // the user reached by following our own suggestion.
+  it("offers no project or environment commands at any scope", () => {
+    const ids = buildBaseCommands({ ...baseCtx, orgSlug: "acme" }).map((c) => c.id);
+    expect(ids).not.toContain("nav.projects");
+    expect(ids).not.toContain("nav.environments");
+    expect(ids).not.toContain("create.project");
+    expect(ids).not.toContain("create.environment");
+    for (const c of buildBaseCommands({ ...baseCtx, orgSlug: "acme" })) {
+      if (c.kind === "navigate") expect(c.to).not.toContain("/projects");
+    }
+  });
+
+  it("offers the product surfaces instead", () => {
+    const ids = buildBaseCommands({ ...baseCtx, orgSlug: "acme" }).map((c) => c.id);
+    expect(ids).toContain("nav.exposure");
   });
 
   it("emits target commands when unlocked and none when locked", () => {
@@ -67,7 +78,7 @@ describe("buildBaseCommands", () => {
   });
 
   it("references only known icon names and stable group names", () => {
-    for (const c of buildBaseCommands({ ...baseCtx, orgSlug: "acme", projectSlug: "web" })) {
+    for (const c of buildBaseCommands({ ...baseCtx, orgSlug: "acme" })) {
       expect(COMMAND_GROUPS).toContain(c.group);
     }
   });

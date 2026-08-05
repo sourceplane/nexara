@@ -9,7 +9,6 @@ import { CreateOrgFlow } from "@/components/orgs/create-org-flow";
 import { useSession } from "@/lib/session";
 import { useApiQuery, qk } from "@/lib/query";
 import { wrap } from "@/lib/api";
-import { SOLO_MODE } from "@/lib/solo-mode";
 
 /**
  * Guided create-organization flow for ADDITIONAL (child) organizations. The
@@ -26,16 +25,10 @@ export default function NewOrgPage() {
 
   const needsOnboarding = orgs.data?.length === 0;
   React.useEffect(() => {
-    // Solo: the user is the tenant and cannot create a second org — bounce home.
-    // (The API edge also 404s POST /v1/organizations; this is the UI guard.)
-    if (SOLO_MODE) {
-      router.replace("/");
-      return;
-    }
     if (needsOnboarding) router.replace("/onboarding");
   }, [needsOnboarding, router]);
 
-  if (SOLO_MODE || orgs.loading || needsOnboarding) {
+  if (orgs.loading || needsOnboarding) {
     return (
       <div className="mx-auto max-w-5xl space-y-6">
         <Skeleton className="h-4 w-28" />

@@ -60,7 +60,6 @@ export type CommandDescriptor =
 
 export interface CommandContext {
   orgSlug: string | null;
-  projectSlug: string | null;
   /** when true, the target switcher is hidden (single locked deploy env). */
   isLocked: boolean;
   /** available API targets for the Target group (empty when locked). */
@@ -70,16 +69,13 @@ export interface CommandContext {
 /**
  * Build the always-available base command set for the current URL scope.
  *
- * Scope-aware: org-scoped commands only appear when an org slug is present;
- * project-scoped commands only when both org and project slugs are present.
- * This mirrors the sidebar/scope-switcher invariant that scope comes from the
- * URL, never from local state.
+ * Scope-aware: org-scoped commands only appear when an org slug is present.
+ * This mirrors the sidebar invariant that scope comes from the URL, never
+ * from local state.
  */
 export function buildBaseCommands(ctx: CommandContext): CommandDescriptor[] {
   const out: CommandDescriptor[] = [];
   const orgBase = ctx.orgSlug ? `/orgs/${ctx.orgSlug}` : null;
-  const projectBase =
-    ctx.orgSlug && ctx.projectSlug ? `/orgs/${ctx.orgSlug}/projects/${ctx.projectSlug}` : null;
 
   // --- Navigation -----------------------------------------------------------
   out.push({
@@ -146,7 +142,6 @@ export function buildBaseCommands(ctx: CommandContext): CommandDescriptor[] {
         "backfill",
         "nexus",
       ]),
-      navItem("nav.projects", "Projects", `${orgBase}/projects`, "FolderKanban", ["project"]),
       navItem("nav.usage", "Usage & quota", `${orgBase}/usage`, "Gauge", [
         "usage",
         "quota",
@@ -200,12 +195,6 @@ export function buildBaseCommands(ctx: CommandContext): CommandDescriptor[] {
       ]),
     );
   }
-  if (projectBase) {
-    out.push(
-      navItem("nav.environments", "Environments", `${projectBase}/environments`, "Boxes", ["env", "environment"]),
-    );
-  }
-
   // --- Create ---------------------------------------------------------------
   out.push({
     id: "create.org",
@@ -218,17 +207,10 @@ export function buildBaseCommands(ctx: CommandContext): CommandDescriptor[] {
   });
   if (orgBase) {
     out.push(
-      navItem("create.project", "Create project", `${orgBase}/projects?new=1`, "PlusCircle", ["new", "project"], "Create"),
       navItem("create.invitation", "Create invitation", `${orgBase}/settings/invitations?new=1`, "UserPlus", ["invite", "new"], "Create"),
       navItem("create.api-key", "Create API key", `${orgBase}/settings/api-keys?new=1`, "KeyRound", ["key", "new"], "Create"),
     );
   }
-  if (projectBase) {
-    out.push(
-      navItem("create.environment", "Create environment", `${projectBase}/environments?new=1`, "PlusCircle", ["env", "new"], "Create"),
-    );
-  }
-
   // --- Target ---------------------------------------------------------------
   if (!ctx.isLocked) {
     for (const t of ctx.targets) {

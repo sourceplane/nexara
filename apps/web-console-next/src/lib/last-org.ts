@@ -18,7 +18,6 @@
  */
 
 import { STORAGE_PREFIX } from "./app-config";
-import { SOLO_MODE } from "./solo-mode";
 import { pickAccountBillingOrg } from "@/components/billing/account-org";
 
 const LAST_ORG_KEY = `${STORAGE_PREFIX}.last-org`;
@@ -51,19 +50,22 @@ export function clearLastOrgSlug(): void {
 }
 
 /**
- * Default destination after auth / at the app root: the last-used org's projects
- * if one is remembered, otherwise onboarding. There is deliberately no org-less
- * landing view — an organization is the unit of work, so when we don't know one
- * we send the user to `/onboarding`, which either creates the first org or
- * forwards to an existing one. Pure given a slug so it's trivially testable;
- * callers pass `readLastOrgSlug()`.
+ * Default destination after auth / at the app root: the last-used org's
+ * **exposure board** if one is remembered, otherwise onboarding.
+ *
+ * The board rather than a settings or projects page, because the board is the
+ * product. A seller signs in to answer one question — *which states have I
+ * crossed?* — and any landing page that makes them navigate to it first has
+ * put administration in front of the answer.
+ *
+ * There is deliberately no org-less landing view: an organization is the unit
+ * of work, so when we don't know one we send the user to `/onboarding`, which
+ * either creates the first org or forwards to an existing one. Pure given a
+ * slug so it's trivially testable; callers pass `readLastOrgSlug()`.
  */
-export function defaultOrgDestination(lastOrgSlug: string | null, soloMode: boolean = SOLO_MODE): string {
+export function defaultOrgDestination(lastOrgSlug: string | null): string {
   if (!lastOrgSlug) return "/onboarding";
-  // Solo: projects are suppressed, so the personal workspace's "dashboard" is
-  // its Account (settings) surface — where the kept single-user features live
-  // (account, notifications, billing, config). Baseline lands on projects.
-  return soloMode ? `/orgs/${lastOrgSlug}/settings` : `/orgs/${lastOrgSlug}/projects`;
+  return `/orgs/${lastOrgSlug}/exposure`;
 }
 
 /** Minimal shape of the API client needed to resolve the post-auth destination. */

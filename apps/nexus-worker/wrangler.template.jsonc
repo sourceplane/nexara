@@ -63,6 +63,10 @@
         {
           "binding": "BILLING_WORKER",
           "service": "nexara-billing-worker-stage"
+        },
+        {
+          "binding": "METERING_WORKER",
+          "service": "nexara-metering-worker-stage"
         }
       ]
     },
@@ -98,6 +102,10 @@
         {
           "binding": "BILLING_WORKER",
           "service": "nexara-billing-worker-prod"
+        },
+        {
+          "binding": "METERING_WORKER",
+          "service": "nexara-metering-worker-prod"
         }
       ]
     }

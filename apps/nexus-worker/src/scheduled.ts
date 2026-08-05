@@ -24,6 +24,9 @@ import type { NexusRepository } from "@saas/db/nexus";
 import type { Env } from "./env.js";
 import { evaluateOrg } from "./evaluation.js";
 import { raiseAlerts } from "./alerts.js";
+import { reportUsage } from "./metering-client.js";
+import { METRIC_JURISDICTIONS } from "./entitlements.js";
+import { orgPublicId } from "./ids.js";
 
 /**
  * Orgs evaluated per tick.
@@ -44,6 +47,13 @@ export interface EvaluationTickSummary {
   notificationsEnqueued: number;
   alertsSuppressedUnverified: number;
   alertsWithoutRecipient: number;
+  /** Usage rows accepted by metering-worker this tick. */
+  usageRecorded: number;
+  /** Reports metering already had for this org+metric+hour — the steady state. */
+  usageDuplicates: number;
+  /** Reports that did not land. Counted separately from `failures`: a metering
+   *  outage is not an evaluation failure and must not read as one. */
+  usageFailures: number;
   failures: number;
 }
 
@@ -61,6 +71,9 @@ export async function runEvaluationTick(
     notificationsEnqueued: 0,
     alertsSuppressedUnverified: 0,
     alertsWithoutRecipient: 0,
+    usageRecorded: 0,
+    usageDuplicates: 0,
+    usageFailures: 0,
     failures: 0,
   };
 
@@ -107,6 +120,33 @@ export async function runEvaluationTick(
       // re-run free, which is the whole reason the guarantee is a constraint
       // and not a lock.
       await repo.setWatermark(asUuid(orgId), maxIngestedAt, now);
+
+      // Usage reporting is LAST, after the watermark, and its outcome is only
+      // counted — never acted on. It is the one step here that may fail
+      // without costing the seller anything: the determination is written, the
+      // alert is raised and the watermark has moved. Reporting before any of
+      // those would let a metering outage delay a threshold alert, which is
+      // exactly backwards for a compliance product.
+      //
+      // `evaluated` — jurisdictions the engine ran on, including unchanged
+      // positions — is the metered dimension, not `written`. What the seller
+      // is charged for is how many jurisdictions we monitor, and a quiet month
+      // in which no position moved is still a month of monitoring.
+      // `orgPublicId` because the internal seam takes the `org_`-prefixed form,
+      // matching billing's. `listOrgsWithActivity` yields raw UUIDs, so passing
+      // one straight through would be rejected as malformed on every single
+      // report — and invisibly, since the outcome here is only counted.
+      const usage = await reportUsage(
+        env.METERING_WORKER,
+        orgPublicId(orgId),
+        METRIC_JURISDICTIONS,
+        result.value.evaluated,
+        now,
+        requestId,
+      );
+      if (usage.kind === "recorded") summary.usageRecorded += 1;
+      else if (usage.kind === "duplicate") summary.usageDuplicates += 1;
+      else summary.usageFailures += 1;
     } catch {
       summary.failures += 1;
     }
@@ -132,7 +172,10 @@ export async function handleScheduled(env: Env, now: Date): Promise<EvaluationTi
     if (
       summary.determinationsWritten > 0 ||
       summary.failures > 0 ||
-      summary.alertsWithoutRecipient > 0
+      summary.alertsWithoutRecipient > 0 ||
+      // A metering outage is invisible from the product side by design, so the
+      // tick is the only place it can surface at all.
+      summary.usageFailures > 0
     ) {
       console.warn(JSON.stringify({ level: "info", msg: "nexus.evaluation_tick", ...summary }));
     }

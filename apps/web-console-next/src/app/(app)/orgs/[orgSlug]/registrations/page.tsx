@@ -40,6 +40,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDate } from "@/components/nexus/nexus";
+import { NexusErrorState } from "@/components/nexus/error-state";
 import { wrap } from "@/lib/api";
 import { useAsync } from "@/lib/use-async";
 import { useSession } from "@/lib/session";
@@ -163,12 +164,11 @@ function Inner({ orgId }: { orgId: string }) {
           ))}
         </div>
       ) : registrations.error ? (
-        <Card>
-          <CardContent className="p-4">
-            <div className="font-medium text-destructive">{registrations.error.code}</div>
-            <div className="text-sm text-muted-foreground">{registrations.error.message}</div>
-          </CardContent>
-        </Card>
+        <NexusErrorState
+          error={registrations.error}
+          surface="your registrations"
+          onRetry={registrations.reload}
+        />
       ) : rows.length === 0 ? (
         <EmptyState
           icon={Stamp}

@@ -18,6 +18,10 @@ spec:
     - component: membership-worker
     - component: policy-worker
     - component: events-worker
+    # §9 usage reporting from the drain. Optional at runtime — an unbound
+    # METERING_WORKER costs a usage row and never a sale event — but declared
+    # so the binding target exists before this worker deploys.
+    - component: metering-worker
   # BF6 wiring documents from orun secrets (SEC-JOB): lease-published by
   # the infra components; wire-live renders the wrangler template from
   # these instead of Secrets Manager documents.

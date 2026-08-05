@@ -5,10 +5,6 @@ export interface Env {
   NOTIFICATIONS_WORKER?: Fetcher;
   ENVIRONMENT: string;
   DEBUG_DELIVERY: string;
-  // M0 / Solo profile switch. "true" auto-provisions one invisible personal
-  // organization per user on first session (see ./solo-mode.ts); absent or any
-  // other value keeps the baseline (no auto-org). Deploy-time var, not a secret.
-  SOLO_MODE?: string;
 
   // --- OAuth sign-in (B1) ---
   // Non-secret vars live in wrangler.jsonc; secrets are set via

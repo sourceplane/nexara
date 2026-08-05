@@ -4,6 +4,12 @@ export interface Env {
   POLICY_WORKER?: Fetcher;
   /** Audit + domain events. The append-only log IS the audit trail (design §8). */
   EVENTS_WORKER?: Fetcher;
+  /**
+   * Service binding to metering-worker for §9 usage reporting. Optional and
+   * silent when absent: usage is bookkeeping downstream of ingestion, so a
+   * missing binding must cost a usage row and never a sale event.
+   */
+  METERING_WORKER?: Fetcher;
   ENVIRONMENT: string;
 
   /** HMAC key for the signed single-use connect state — the tenancy keystone. */

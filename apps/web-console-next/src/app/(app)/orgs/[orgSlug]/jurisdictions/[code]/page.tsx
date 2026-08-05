@@ -20,6 +20,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeterminationExplainer } from "@/components/nexus/determination-explainer";
+import { NexusErrorState } from "@/components/nexus/error-state";
 import { ThresholdMeter } from "@/components/nexus/threshold-meter";
 import {
   describeLogic,
@@ -46,7 +47,7 @@ export default function JurisdictionPage() {
 function Inner({ orgId, orgSlug, code }: { orgId: string; orgSlug: string; code: string }) {
   const { client } = useSession();
   const orgBase = `/orgs/${orgSlug}`;
-  const { data, loading, error } = useAsync(
+  const { data, loading, error, reload } = useAsync(
     () => wrap(() => client.exposure.getJurisdiction(orgId, code)),
     [client, orgId, code],
   );
@@ -72,12 +73,7 @@ function Inner({ orgId, orgSlug, code }: { orgId: string; orgSlug: string; code:
           <Skeleton className="h-64 w-full" />
         </div>
       ) : error ? (
-        <Card>
-          <CardContent className="p-4">
-            <div className="font-medium text-destructive">{error.code}</div>
-            <div className="text-sm text-muted-foreground">{error.message}</div>
-          </CardContent>
-        </Card>
+        <NexusErrorState error={error} surface="this jurisdiction" onRetry={reload} />
       ) : !data ? (
         <EmptyState icon={ScrollText} title="Jurisdiction not found" />
       ) : (
