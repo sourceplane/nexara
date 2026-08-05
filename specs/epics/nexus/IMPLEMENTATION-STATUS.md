@@ -17,7 +17,11 @@
 | NX6 | **Done** | `channels-worker` + Stripe; Q4/Q5/Q6 resolved in `connector-gate.md` |
 | NX7 | **Done** | Shopify adapter |
 | NX8 | **Done** | Console, storefront, and the support capability ([`support-view.md`](./support-view.md)) |
-| NX9 | **Partial** | Entitlements, demo tenant, docs done; metering and live verification blocked — see below |
+| NX9 | **Done** | Entitlements, demo tenant, docs; usage reporting and live verification closed — see below |
+| NX10 | **Done** | Solo (M0) decommissioned; the console is the product's console |
+
+**The epic is complete.** Every milestone is landed and `main` is green with the
+migrations applied to stage and prod.
 
 ## As-built — NX9 (commercial and evidence)
 
@@ -71,26 +75,99 @@ once marketplace-facilitated sales count. Same ledger, two lawful answers,
 differing only by the state's own rule — the clearest possible demonstration
 that this product measures rather than guesses.
 
-### What is NOT done, and why
+### Usage reporting — closed
 
-- **Metered dimensions are not yet ingested to `metering-worker`.** Its
-  `record-usage` route requires a real actor with membership and policy
-  context; the drain and the evaluation cron have neither. Recording them needs
-  an internal service-binding seam on `metering-worker` of the kind
-  `billing-worker` already has (`x-internal-caller` with an allow-list). That
-  is a platform change with its own authorization question — the **second**
-  one this epic has run into, after the support view — and it belongs in a
-  change that can be reviewed as such rather than folded into a feature
-  milestone. The entitlement *limits* work without it; what is missing is usage
-  *reporting*.
-- **Live stage/prod verification has not run.** `db-migrate` cannot resolve its
-  Supabase token: `Brokered secret SUPABASE_ACCESS_TOKEN binding unavailable —
-  connection int_71290a8787e54e0f9cc894e80bed844d (broker: limit_reached)`.
-  Three separate attempts over an hour failed identically, including a fresh
-  attempt-1 run that failed in ten seconds, so this is a standing cap rather
-  than a burst. It needs the connection freed or its limit raised in the Orun
-  workspace. Nothing has been half-applied — on a PR that lane runs
-  `mode=plan`.
+The internal service-binding seam this milestone deferred now exists:
+`POST /v1/internal/metering/usage`, mirroring `billing-worker`'s pattern. It
+drops the *actor* check (the cron and the drain have no session to resolve one
+from) and keeps everything else — a service-binding allow-list checked before
+any repository access, an explicitly named org, and the same validation the
+public path applies.
+
+**The two dimensions need different idempotency, and conflating them loses
+data.** `jurisdictions_monitored` is a **gauge**: the cron re-measures the same
+level hourly, so the key is period-derived and a duplicate is correctly
+discarded. `sale_events_ingested` is a **counter**: the drain runs every minute
+with a different batch each time, so a period-keyed counter would record the
+first tick of each hour and silently drop the other fifty-nine. Its key is a
+hash of the delivery ids the report covers, inheriting the drain's existing
+exactly-once guarantee rather than inventing a second one.
+
+Reporting is the last step on both paths and its outcome is only counted. A
+metering outage costs a usage row and never a determination or a sale event —
+the same direction the entitlement gate fails, for the same reason.
+
+### Live verification — done
+
+`main` is green and migrations `200`–`260` are applied to **stage and prod**.
+The blocker was never `db-migrate`'s code: `SUPABASE_ACCESS_TOKEN` and
+`SUPABASE_ORG_ID` were absent from every rung of the Orun workspace, and the
+Cloudflare connection was separately at `limit_reached`. Both secrets were
+re-authored on the project rung (`management-access` and `org-id` templates)
+and the cap cleared. Recorded here because the earlier diagnosis in this file
+named the wrong cause.
+
+Note the platform constraint found while fixing it: the **supabase provider
+does not support `--mode rotated`** (`supported modes: brokered`), so those two
+secrets are necessarily brokered and remain exposed to broker caps. Cloudflare
+does support `rotated`.
+
+## As-built — NX10 (Solo decommissioned, the console becomes the product's)
+
+### Why Solo had to go
+
+The M0/Solo profile made the product a single-user B2C app: one
+auto-provisioned, invisible personal organization per user, with orgs, members,
+invitations, API keys, projects, metering and outbound webhooks all 404'd at
+the edge and hidden in the console.
+
+That is the wrong shape for this product. A seller's tax exposure is worked by
+a finance team and frequently by an outside accountant, so members,
+invitations and API keys are the job rather than plumbing to hide. **Q2** —
+seller vs accounting firm as the tenant — cannot even be *asked* while the
+tenant is forced to be one person.
+
+It was also a blocker, not merely a mismatch: `isSoloSuppressed` 404'd
+`isMeteringRoute`, so the usage reporting NX9 left open could not have worked
+while the profile was on.
+
+Removing `ensurePersonalOrg` moves first-org creation onto the console's
+`/onboarding` flow — which is what that module's own header already named as
+the baseline fallback. An org is now created explicitly instead of racing an
+invisible one into existence at login.
+
+`tests/db/src/solo-decommissioned.test.ts` is the control. It found two
+survivors on its first run.
+
+### The console is the product's console
+
+The repo grew out of a developer-platform starter and the console still carried
+its furniture: a project tree with environments and a Git page, an
+"import from GitHub/GitLab/Bitbucket" step in org creation, and plan cards
+selling "Up to 3 projects". None of it means anything to someone measuring
+sales against state thresholds, and all of it competed with what they came for.
+
+| Was | Is |
+|---|---|
+| Root `/` → `/login` for signed-out visitors | → `/nexara`, the storefront that says what the product measures and what it will not do |
+| Landing → the org's projects list | → the **exposure board** |
+| Sidebar: Exposure…Channels, Projects, Usage, Settings | the product surfaces, Usage, Settings |
+| Org creation step 2 (child): "pick a starting point" | removed — a child org inherits its parent's plan and has nothing to choose |
+| Plan cards: "Up to 3 projects", "Up to 25 projects" | jurisdictions and channels, transcribed from `plan-catalog.ts` |
+
+Plan copy is transcribed from the real entitlements rather than written as
+marketing: a card promising a limit the catalog does not grant is a bug that
+only surfaces after someone has paid.
+
+The org-root admin paths (`/orgs/:slug/members` and friends) stay as
+compatibility redirects into `/settings/*` — old links keep working.
+
+`tests/db/src/console-product-surface.test.ts` asserts the surfaces are *gone*
+rather than merely unlinked: a route that exists but is unlinked is still
+reachable by URL and still in the bundle. It caught two live links to the
+deleted `/projects` route — in the settings rail's "back to app" button and on
+the org chooser — that the nav tests could not see because neither goes through
+the nav model.
 
 ## As-built — NX8 (the console)
 

@@ -100,17 +100,44 @@ export function planChangeAction(opts: {
   return opts.manageable ? "change" : "checkout";
 }
 
-/** Curated, safe-to-display feature bullets per plan code for the change-plan cards. */
+/**
+ * Curated, safe-to-display feature bullets per plan code for the change-plan
+ * cards.
+ *
+ * These are transcribed from the real entitlements in
+ * `apps/billing-worker/src/plan-catalog.ts`, not written as marketing copy.
+ * A plan card that promises a limit the catalog does not grant is a bug that
+ * only surfaces after someone has paid, so the numbers here are the numbers
+ * the gate enforces:
+ *
+ *   free       jurisdictions 10, channels 1,  members 5
+ *   pro        jurisdictions ∞,  channels 3,  members 20
+ *   business   jurisdictions ∞,  channels ∞,  members 50
+ *   enterprise all unlimited
+ *
+ * Jurisdictions lead because that is the dimension the product is bought for
+ * and the one the board visibly locks. If the catalog changes, change this.
+ */
 export function planFeatureLines(code: string): string[] {
   switch (code) {
     case "free":
-      return ["Up to 3 projects", "Up to 5 members", "Community support"];
+      return ["10 monitored jurisdictions", "1 sales channel", "Up to 5 members"];
     case "pro":
-      return ["Up to 25 projects", "Up to 20 members", "Custom domains", "Priority support"];
+      return [
+        "Unlimited monitored jurisdictions",
+        "3 sales channels",
+        "Up to 20 members",
+        "Priority support",
+      ];
     case "business":
-      return ["Up to 100 projects", "Up to 50 members", "Multiple organizations", "Custom domains"];
+      return [
+        "Unlimited monitored jurisdictions",
+        "Unlimited sales channels",
+        "Up to 50 members",
+        "Multiple organizations",
+      ];
     case "enterprise":
-      return ["Unlimited projects & members", "SSO & advanced security", "Dedicated support"];
+      return ["Everything unlimited", "SSO & advanced security", "Dedicated support"];
     default:
       return [];
   }

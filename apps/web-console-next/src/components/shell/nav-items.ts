@@ -23,7 +23,6 @@ export interface NavSection {
 
 export interface NavScope {
   orgSlug?: string | null;
-  projectSlug?: string | null;
 }
 
 /**
@@ -75,8 +74,8 @@ export function buildNavSections(scope: NavScope): NavSection[] {
 
 /**
  * Resolve the active link for a pathname: the longest matching `href` prefix
- * wins, so `/orgs/x/projects/y/environments` highlights Environments, not
- * Projects. `/orgs` (exact) only highlights when the path is exactly `/orgs`.
+ * wins, so `/orgs/x/jurisdictions/US-TX` highlights the jurisdiction page
+ * rather than a parent. `/orgs` (exact) only highlights on exactly `/orgs`.
  */
 export function isLinkActive(href: string, pathname: string | null): boolean {
   if (!pathname) return false;

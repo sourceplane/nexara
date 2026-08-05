@@ -62,10 +62,13 @@ describe("buildNavSections", () => {
   // repo grew out of. Nexara measures an organization's sales against published
   // thresholds; there is nothing for a project to name.
   it("never renders a project section or any project link", () => {
-    const withProjectScope = buildNavSections({ orgSlug: "acme", projectSlug: "web" });
-    expect(withProjectScope.find((s) => s.id === "project")).toBeUndefined();
-    const hrefs = withProjectScope.flatMap((s) => s.links.map((l) => l.href));
+    const sections = buildNavSections({ orgSlug: "acme" });
+    expect(sections.find((s) => s.id === "project")).toBeUndefined();
+    const hrefs = sections.flatMap((s) => s.links.map((l) => l.href));
     expect(hrefs.some((h) => h.includes("/projects"))).toBe(false);
+    // NavScope no longer carries a project slug at all, so a caller cannot
+    // reintroduce project scope by passing one.
+    expect("projectSlug" in ({} as Record<string, unknown>)).toBe(false);
   });
 });
 

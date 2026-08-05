@@ -17,15 +17,12 @@ import { slugify } from "@/lib/slug";
 import { cn } from "@/lib/cn";
 import { SALES_EMAIL } from "@/lib/app-config";
 import { PlanPicker } from "./plan-picker";
-import { SourcePicker } from "./source-picker";
 import {
   PLAN_OPTIONS,
   createButtonLabel,
   flowSteps,
   postCreatePath,
-  sourceSummary,
   type CreateOrgMode,
-  type SourceChoice,
   type StepDef,
 } from "./create-org-model";
 
@@ -75,7 +72,6 @@ export function CreateOrgFlow({
   const [slug, setSlug] = React.useState("");
   const [slugTouched, setSlugTouched] = React.useState(false);
   const [planCode, setPlanCode] = React.useState("free");
-  const [source, setSource] = React.useState<SourceChoice>({ kind: "scratch" });
   const [submitting, setSubmitting] = React.useState(false);
   const [precondition, setPrecondition] = React.useState<ApiErrorBody | null>(null);
 
@@ -164,10 +160,10 @@ export function CreateOrgFlow({
     }
 
     toast({ kind: "success", title: `${org.name} created` });
-    router.push(postCreatePath(mode, source, org.slug));
+    router.push(postCreatePath(org.slug));
   };
 
-  const createLabel = createButtonLabel(mode, plan, source);
+  const createLabel = createButtonLabel(mode, plan);
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -187,7 +183,7 @@ export function CreateOrgFlow({
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {mode === "parent"
-            ? "An organization is your tenant — it owns projects, members, and billing. You need one to use the console."
+            ? "An organization is your tenant — it owns your sales ledger, members, and billing. You need one to use the console."
             : "Another tenant under your account — its billing rolls up to your parent organization."}
         </p>
       </header>
@@ -252,16 +248,6 @@ export function CreateOrgFlow({
             </section>
           )}
 
-          {step.id === "source" && (
-            <section className="space-y-6">
-              <StepHeading
-                title="Pick a starting point"
-                subtitle="Connect a Git provider, clone a template, or start with an empty organization."
-              />
-              <SourcePicker value={source} onChange={setSource} />
-            </section>
-          )}
-
           {step.id === "review" && (
             <ReviewStep
               mode={mode}
@@ -269,7 +255,6 @@ export function CreateOrgFlow({
               name={trimmedName}
               slug={slug}
               plan={plan}
-              source={source}
             />
           )}
 
@@ -451,14 +436,12 @@ function ReviewStep({
   name,
   slug,
   plan,
-  source,
 }: {
   mode: CreateOrgMode;
   billingParent: BillingParentRef | null;
   name: string;
   slug: string;
   plan: (typeof PLAN_OPTIONS)[number];
-  source: SourceChoice;
 }) {
   const nextSteps: string[] = [`We create ${name || "your organization"} and make you its owner.`];
   if (mode === "parent") {
@@ -467,12 +450,10 @@ function ReviewStep({
     } else if (plan.code !== "free") {
       nextSteps.push(`You're taken to secure checkout to start your ${plan.name} subscription.`);
     } else {
-      nextSteps.push("You land on your new dashboard, ready to create projects.");
+      nextSteps.push("You land on your exposure board, ready to connect a sales channel.");
     }
-  } else if (source.kind === "git" && source.provider === "github") {
-    nextSteps.push("You're taken to Integrations to install the GitHub App.");
   } else {
-    nextSteps.push("You land on your new dashboard, ready to create projects.");
+    nextSteps.push("You land on its exposure board, ready to connect a sales channel.");
   }
 
   return (
@@ -513,11 +494,7 @@ function ReviewStep({
               </span>
             </span>
           </ReviewRow>
-        ) : (
-          <ReviewRow label="Starting point">
-            <span className="text-sm">{sourceSummary(source)}</span>
-          </ReviewRow>
-        )}
+        ) : null}
       </dl>
 
       <div className="rounded-lg border bg-muted/40 p-4">

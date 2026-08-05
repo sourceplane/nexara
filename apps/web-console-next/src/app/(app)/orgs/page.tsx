@@ -116,11 +116,11 @@ export default function OrgsPage() {
           {orgs.data.map((o) => (
             <Link
               key={o.id}
-              href={`/orgs/${o.slug}/projects`}
+              href={`/orgs/${o.slug}/exposure`}
               className="group"
               onMouseEnter={() =>
-                prefetch(qk.projects(o.id), () =>
-                  wrap(async () => (await client.projects.list(o.id)).projects),
+                prefetch(qk.exposure(o.id), () =>
+                  wrap(async () => (await client.exposure.list(o.id)).exposure),
                 )
               }
             >

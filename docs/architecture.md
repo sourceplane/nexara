@@ -208,6 +208,45 @@ open question Q1 in
 
 ---
 
+## Usage reporting, and the seam it needed
+
+Plan *limits* are checked on the read path, where an actor exists. Usage
+*reporting* has no actor: the hourly evaluation cron has no session, and the
+drain is woken by a provider webhook. Both report through
+`POST /v1/internal/metering/usage`, a service-binding-only route that drops the
+actor check and keeps everything else — an allow-list checked before any
+repository access, an explicitly named org, and the public path's validation.
+No edge facade matches `/v1/internal/…`, which is asserted per-facade by test.
+
+**The two dimensions are different kinds of number and need different
+idempotency keys.** `jurisdictions_monitored` is a gauge, re-measured hourly at
+the same level, so its key is period-derived and a duplicate is correctly
+dropped. `sale_events_ingested` is a counter over a per-minute batch, so its
+key is a hash of the delivery ids it covers — a period key there would record
+one tick an hour and silently discard the rest.
+
+Reporting is last on both paths and never throws. A metering outage costs a
+usage row, never a determination or a sale event.
+
+## What the console is, and what it no longer is
+
+The console is the product's console: the exposure board is the root
+destination for a signed-in seller, and the storefront at `/nexara` is where a
+signed-out visitor lands. The developer-platform surfaces this repo inherited
+from its starter — a project tree with environments and a Git page, an
+import-from-GitHub step in org creation — are gone, and a source scan keeps
+them gone rather than merely unlinked.
+
+`projects-worker` still exists as a platform bounded context with its own
+routes and tests. It simply has **no product surface**: nothing in the console
+links to it and no nexus flow uses it. That is a deliberate stopping point —
+deleting a whole bounded context is a platform change, not a UI one.
+
+The Solo (M0) single-user profile is decommissioned. It forced one invisible
+personal organization per user and suppressed members, invitations, API keys
+and metering at the edge; a tax position is worked by a finance team and often
+an outside accountant, so those are the job rather than plumbing to hide.
+
 ## Observability
 
 The structured timing line on every handler, `observability: { enabled: true }`

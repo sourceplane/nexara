@@ -11,7 +11,7 @@
 
 export type CreateOrgMode = "parent" | "child";
 
-export type StepId = "details" | "plan" | "source" | "review";
+export type StepId = "details" | "plan" | "review";
 
 export interface StepDef {
   id: StepId;
@@ -23,9 +23,11 @@ export interface StepDef {
 export function flowSteps(mode: CreateOrgMode): StepDef[] {
   return [
     { id: "details", label: "Organization", description: "Name and URL" },
-    mode === "parent"
-      ? { id: "plan", label: "Plan", description: "Pick your pricing tier" }
-      : { id: "source", label: "Starting point", description: "Import or start fresh" },
+    // An additional organization inherits its parent's plan (the MO3
+    // entitlement fan-out), so it has nothing to pick — details and review.
+    ...(mode === "parent"
+      ? [{ id: "plan" as const, label: "Plan", description: "Pick your pricing tier" }]
+      : []),
     { id: "review", label: "Review", description: "Confirm and create" },
   ];
 }
@@ -58,14 +60,14 @@ export const PLAN_OPTIONS: PlanOption[] = [
   {
     code: "free",
     name: "Free",
-    tagline: "For personal projects and evaluation",
+    tagline: "For a first look at where you stand",
     price: "$0",
     per: "/mo",
   },
   {
     code: "pro",
     name: "Pro",
-    tagline: "For small teams shipping to production",
+    tagline: "For sellers trading across state lines",
     price: "$20",
     per: "/mo",
   },
@@ -87,115 +89,22 @@ export const PLAN_OPTIONS: PlanOption[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Starting point (child mode)
-// ---------------------------------------------------------------------------
-
-export type GitProviderId = "github" | "gitlab" | "bitbucket";
-
-/** What the new (child) organization starts from. */
-export type SourceChoice =
-  | { kind: "scratch" }
-  | { kind: "git"; provider: GitProviderId }
-  | { kind: "template"; templateId: string };
-
-export interface GitProviderDef {
-  id: GitProviderId;
-  name: string;
-  /** Only GitHub is wired up today (org-scoped GitHub App install). */
-  available: boolean;
-  note: string;
-}
-
-export const GIT_PROVIDERS: GitProviderDef[] = [
-  {
-    id: "github",
-    name: "Continue with GitHub",
-    available: true,
-    note: "Install the GitHub App right after the organization is created.",
-  },
-  {
-    id: "gitlab",
-    name: "Continue with GitLab",
-    available: false,
-    note: "Import projects from GitLab groups and repositories.",
-  },
-  {
-    id: "bitbucket",
-    name: "Continue with Bitbucket",
-    available: false,
-    note: "Import projects from Bitbucket workspaces.",
-  },
-];
-
-export interface TemplateDef {
-  id: string;
-  name: string;
-  description: string;
-}
-
-export const TEMPLATES: TemplateDef[] = [
-  {
-    id: "web-app",
-    name: "Web App Starter",
-    description: "Next.js front end wired to org-scoped auth and projects.",
-  },
-  {
-    id: "api-service",
-    name: "API Service",
-    description: "Typed REST service with environments and config baked in.",
-  },
-  {
-    id: "worker",
-    name: "Background Worker",
-    description: "Queue-driven worker with metering and webhooks.",
-  },
-  {
-    id: "ai-chatbot",
-    name: "AI Chatbot",
-    description: "Streaming chat app with usage-based billing hooks.",
-  },
-];
-
-export function providerShortName(id: GitProviderId): string {
-  return id === "github" ? "GitHub" : id === "gitlab" ? "GitLab" : "Bitbucket";
-}
-
-/** Short human label for the review step. */
-export function sourceSummary(choice: SourceChoice): string {
-  if (choice.kind === "git") return `Import from ${providerShortName(choice.provider)}`;
-  if (choice.kind === "template") {
-    const t = TEMPLATES.find((x) => x.id === choice.templateId);
-    return `Template: ${t?.name ?? choice.templateId}`;
-  }
-  return "Start from scratch";
-}
-
-// ---------------------------------------------------------------------------
 // Submit semantics
 // ---------------------------------------------------------------------------
 
 /** The primary button label on the review step, naming the hand-off it triggers. */
-export function createButtonLabel(
-  mode: CreateOrgMode,
-  plan: PlanOption,
-  source: SourceChoice,
-): string {
+export function createButtonLabel(mode: CreateOrgMode, plan: PlanOption): string {
   if (mode === "parent" && plan.contact) return "Create & contact sales";
   if (mode === "parent" && plan.code !== "free") return "Create & continue to checkout";
-  if (mode === "child" && source.kind === "git" && source.provider === "github") {
-    return "Create & connect GitHub";
-  }
   return "Create organization";
 }
 
 /**
  * Where the console routes after a successful create (when it does not leave
- * for hosted checkout): the new org's Integrations page when the buyer chose
- * the GitHub starting point, else the new org's projects dashboard.
+ * for hosted checkout): the exposure board. It is empty at this point and says
+ * so, and it is still the right destination because the "connect a channel"
+ * call to action lives on it.
  */
-export function postCreatePath(mode: CreateOrgMode, source: SourceChoice, orgSlug: string): string {
-  if (mode === "child" && source.kind === "git" && source.provider === "github") {
-    return `/orgs/${orgSlug}/settings/integrations`;
-  }
-  return `/orgs/${orgSlug}/projects`;
+export function postCreatePath(orgSlug: string): string {
+  return `/orgs/${orgSlug}/exposure`;
 }

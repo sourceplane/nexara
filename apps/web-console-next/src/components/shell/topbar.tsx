@@ -4,7 +4,6 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Search, Sun, Moon, LogOut, User2, Building2, Command as CommandIcon } from "lucide-react";
 import { useTheme } from "next-themes";
-import { ScopeSwitcher } from "./scope-switcher";
 import { MobileNav } from "./mobile-nav";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +29,6 @@ export function Topbar() {
     <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur-md pt-safe">
       <div className="flex h-12 items-center gap-2 px-3 sm:gap-3 sm:px-4">
         <MobileNav />
-        <ScopeSwitcher />
 
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
           {/* Search lives in the sidebar "Find…" on desktop; the topbar keeps a

@@ -16,8 +16,11 @@ export interface Crumb {
 
 /** Page labels for org-scoped leaf segments. */
 const SEGMENT_LABELS: Record<string, string> = {
-  projects: "Projects",
-  environments: "Environments",
+  exposure: "Exposure",
+  registrations: "Registrations",
+  ledger: "Ledger",
+  channels: "Channels",
+  jurisdictions: "Jurisdictions",
   usage: "Usage & quota",
   settings: "Settings",
   members: "Members",
@@ -34,17 +37,19 @@ const SEGMENT_LABELS: Record<string, string> = {
 /**
  * Segments that carry a dynamic child (a slug/id) we should render as its own
  * crumb. Maps the parent segment to the href suffix that makes the dynamic
- * crumb navigable (e.g. a project crumb links to its environments list).
+ * crumb navigable.
+ *
+ * Empty since the project tree was removed: every remaining dynamic crumb —
+ * a jurisdiction code, a webhook endpoint id — IS the leaf page, so it is the
+ * last crumb and carries no href by construction.
  */
-const DYNAMIC_CHILD_HREF: Record<string, string> = {
-  projects: "/environments",
-};
+const DYNAMIC_CHILD_HREF: Record<string, string> = {};
 
 /**
  * Build the breadcrumb trail for an org-scoped pathname.
  *
- * The first crumb is always the org (display name, linking to the org's
- * Projects page — its de-facto home). Subsequent crumbs follow the pathname
+ * The first crumb is always the org (display name, linking to the exposure
+ * board — the product's home surface). Subsequent crumbs follow the pathname
  * segments after `/orgs/:orgSlug/`, using friendly labels for known segments
  * and the raw slug/id for dynamic ones. The final crumb is the current page
  * and carries no href.
@@ -56,7 +61,7 @@ export function buildBreadcrumbs(args: {
 }): Crumb[] {
   const { orgSlug, orgName, pathname } = args;
   const base = `/orgs/${orgSlug}`;
-  const crumbs: Crumb[] = [{ label: orgName, href: `${base}/projects` }];
+  const crumbs: Crumb[] = [{ label: orgName, href: `${base}/exposure` }];
 
   if (!pathname || !pathname.startsWith(`${base}`)) {
     // Foreign path (shouldn't happen inside OrgScope) — org crumb only.
@@ -75,7 +80,7 @@ export function buildBreadcrumbs(args: {
     let crumbHref: string | undefined = href;
     if (label === undefined) {
       // Dynamic segment (slug/id): label is the raw value; link it onward to
-      // its canonical child page when we know one (project → environments).
+      // its canonical child page when we know one.
       label = segment;
       const childSuffix = prev ? DYNAMIC_CHILD_HREF[prev] : undefined;
       crumbHref = childSuffix ? `${href}${childSuffix}` : undefined;

@@ -71,7 +71,7 @@ export function NavContent({
   onNavigate?: (() => void) | undefined;
   mobile?: boolean;
 }) {
-  const params = useParams<{ orgSlug?: string; projectSlug?: string }>();
+  const params = useParams<{ orgSlug?: string }>();
   const pathname = usePathname();
   const orgSlug = params?.orgSlug ?? null;
 
@@ -103,7 +103,6 @@ export function NavContent({
       ) : (
         <ProductNav
           orgSlug={orgSlug}
-          projectSlug={params?.projectSlug ?? null}
           pathname={pathname}
           onNavigate={onNavigate}
           mobile={mobile}
@@ -115,18 +114,16 @@ export function NavContent({
 
 function ProductNav({
   orgSlug,
-  projectSlug,
   pathname,
   onNavigate,
   mobile,
 }: {
   orgSlug: string | null;
-  projectSlug: string | null;
   pathname: string | null;
   onNavigate?: (() => void) | undefined;
   mobile: boolean;
 }) {
-  const sections = buildNavSections({ orgSlug, projectSlug });
+  const sections = buildNavSections({ orgSlug });
   return (
     <nav className={cn("px-2 pb-4 pt-3", mobile ? "space-y-5" : "space-y-6")}>
       {sections.map((section) => (
@@ -174,7 +171,7 @@ function SettingsNavContent({
       {/* Back button on the left, "Settings" centered (Vercel pattern). */}
       <div className={cn("relative mb-2 flex items-center justify-center", mobile ? "h-11" : "h-8")}>
         <Link
-          href={`/orgs/${orgSlug}/projects`}
+          href={`/orgs/${orgSlug}/exposure`}
           {...(onNavigate ? { onClick: onNavigate } : {})}
           aria-label="Back to app"
           className={cn(

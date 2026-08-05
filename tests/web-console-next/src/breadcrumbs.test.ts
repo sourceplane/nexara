@@ -3,9 +3,9 @@ import { buildBreadcrumbs } from "@web-console-next/components/shell/breadcrumbs
 const org = { orgSlug: "acme", orgName: "Acme Inc" };
 
 describe("buildBreadcrumbs", () => {
-  it("starts with the org name linking to its Projects home", () => {
+  it("starts with the org name linking to the exposure board", () => {
     const crumbs = buildBreadcrumbs({ ...org, pathname: "/orgs/acme/usage" });
-    expect(crumbs[0]).toEqual({ label: "Acme Inc", href: "/orgs/acme/projects" });
+    expect(crumbs[0]).toEqual({ label: "Acme Inc", href: "/orgs/acme/exposure" });
   });
 
   it("renders the org page itself as a single unlinked crumb", () => {
@@ -15,31 +15,31 @@ describe("buildBreadcrumbs", () => {
   it("labels known segments and leaves the last crumb unlinked", () => {
     const crumbs = buildBreadcrumbs({ ...org, pathname: "/orgs/acme/settings/members" });
     expect(crumbs).toEqual([
-      { label: "Acme Inc", href: "/orgs/acme/projects" },
+      { label: "Acme Inc", href: "/orgs/acme/exposure" },
       { label: "Settings", href: "/orgs/acme/settings" },
       { label: "Members" },
     ]);
   });
 
-  it("links a project crumb onward to its environments list", () => {
+  it("renders a jurisdiction detail page with its code as the current crumb", () => {
     const crumbs = buildBreadcrumbs({
       ...org,
-      pathname: "/orgs/acme/projects/demo-app/environments",
+      pathname: "/orgs/acme/jurisdictions/US-TX",
     });
     expect(crumbs).toEqual([
-      { label: "Acme Inc", href: "/orgs/acme/projects" },
-      { label: "Projects", href: "/orgs/acme/projects" },
-      { label: "demo-app", href: "/orgs/acme/projects/demo-app/environments" },
-      { label: "Environments" },
+      { label: "Acme Inc", href: "/orgs/acme/exposure" },
+      { label: "Jurisdictions", href: "/orgs/acme/jurisdictions" },
+      { label: "US-TX" },
     ]);
   });
 
-  it("renders environment detail with the env slug as the current page", () => {
-    const crumbs = buildBreadcrumbs({
-      ...org,
-      pathname: "/orgs/acme/projects/demo-app/environments/prod",
-    });
-    expect(crumbs[crumbs.length - 1]).toEqual({ label: "prod" });
+  it("labels the product surfaces", () => {
+    const labels = (p: string) =>
+      buildBreadcrumbs({ ...org, pathname: p }).map((c) => c.label);
+    expect(labels("/orgs/acme/exposure")).toContain("Exposure");
+    expect(labels("/orgs/acme/ledger")).toContain("Ledger");
+    expect(labels("/orgs/acme/channels")).toContain("Channels");
+    expect(labels("/orgs/acme/registrations")).toContain("Registrations");
   });
 
   it("renders nested billing pages with every ancestor linked", () => {
@@ -48,7 +48,7 @@ describe("buildBreadcrumbs", () => {
       pathname: "/orgs/acme/settings/billing/change-plan",
     });
     expect(crumbs).toEqual([
-      { label: "Acme Inc", href: "/orgs/acme/projects" },
+      { label: "Acme Inc", href: "/orgs/acme/exposure" },
       { label: "Settings", href: "/orgs/acme/settings" },
       { label: "Billing & plan", href: "/orgs/acme/settings/billing" },
       { label: "Change plan" },
@@ -61,7 +61,7 @@ describe("buildBreadcrumbs", () => {
       pathname: "/orgs/acme/settings/webhooks/ep_123",
     });
     expect(crumbs).toEqual([
-      { label: "Acme Inc", href: "/orgs/acme/projects" },
+      { label: "Acme Inc", href: "/orgs/acme/exposure" },
       { label: "Settings", href: "/orgs/acme/settings" },
       { label: "Webhooks", href: "/orgs/acme/settings/webhooks" },
       { label: "ep_123" },
